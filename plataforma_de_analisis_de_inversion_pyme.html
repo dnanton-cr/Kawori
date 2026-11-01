@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InvestLocal - Portal de Inversión en PYMEs</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0284c7',
+              800: '#075985',
+              900: '#0c4a6e',
+              950: '#082f49'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Estilos personalizados para barra de desplazamiento y transiciones */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- NAVEGACIÓN PRINCIPAL -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="resetFilters()">
+        <div class="bg-emerald-500 text-slate-950 p-2 rounded-lg font-bold flex items-center justify-center">
+          <i data-lucide="trending-up" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight text-white">Invest<span class="text-emerald-400">Local</span></span>
+          <span class="hidden sm:inline-block text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded ml-2 font-medium">Análisis PYME</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <button onclick="openNewModal()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-4 py-2 rounded-lg transition-colors duration-200 text-sm flex items-center shadow-lg shadow-emerald-500/20">
+          <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>
+          Nueva PYME
+        </button>
+        <button onclick="resetToDemoData()" title="Restaurar datos demo" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- PANEL PRINCIPAL Y FILTROS -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- ENCABEZADO Y MÉTRICAS GLOBALES -->
+    <div class="mb-8 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800 relative overflow-hidden">
+      <div class="absolute right-0 top-0 bottom-0 w-1/3 bg-emerald-500/5 transform skew-x-12 pointer-events-none"></div>
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold">Opciones de Inversión Tradicionales & PYMEs</h1>
+          <p class="text-slate-400 text-sm mt-1 max-w-2xl">
+            Repositorio estructurado para el análisis de rentabilidad, riesgo y tesis de inversión en empresas de economía real.
+          </p>
+        </div>
+        
+        <!-- Tarjetas rápidas de KPIs del Portafolio -->
+        <div class="grid grid-cols-3 gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+          <div class="text-center px-3 border-r border-slate-800">
+            <span class="text-xs text-slate-400 block uppercase font-medium">Analizadas</span>
+            <span id="stat-total" class="text-xl font-bold text-white">0</span>
+          </div>
+          <div class="text-center px-3 border-r border-slate-800">
+            <span class="text-xs text-slate-400 block uppercase font-medium">ROI Prom.</span>
+            <span id="stat-roi-avg" class="text-xl font-bold text-emerald-400">0%</span>
+          </div>
+          <div class="text-center px-3">
+            <span class="text-xs text-slate-400 block uppercase font-medium">Capital Sol.</span>
+            <span id="stat-capital" class="text-xl font-bold text-cyan-400">$0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLES: NAVEGACIÓN POR INDUSTRIA Y BÚSQUEDA -->
+    <div class="space-y-4 mb-6">
+      <!-- Pestañas de Industrias -->
+      <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none" id="industry-tabs">
+        <!-- Generado dinámicamente -->
+      </div>
+
+      <!-- Barra de Filtros Secundarios y Búsqueda -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+        
+        <!-- Buscador -->
+        <div class="relative w-full md:w-80">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+          <input 
+            type="text" 
+            id="search-input" 
+            oninput="handleSearch()"
+            placeholder="Buscar por PYME, palabras clave..."
+            class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"
+          >
+        </div>
+
+        <!-- Filtros Rápidos -->
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <!-- Filtro Riesgo -->
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Riesgo:</span>
+            <select id="risk-filter" onchange="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="ALL font">Todos los niveles</option>
+              <option value="Bajo">Bajo</option>
+              <option value="Moderado">Moderado</option>
+              <option value="Alto">Alto</option>
+            </select>
+          </div>
+
+          <!-- Filtro Estado -->
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Estado:</span>
+            <select id="status-filter" onchange="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="ALL">Todos los estados</option>
+              <option value="Abierta">Oportunidad Abierta</option>
+              <option value="En Evaluación">En Evaluación</option>
+              <option value="Financiada">Financiada</option>
+            </select>
+          </div>
+
+          <!-- Limpiar filtros -->
+          <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-slate-800 underline px-2 py-1">
+            Limpiar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECIPIENTE DE TARJETAS PYME -->
+    <div id="pymes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Generado dinámicamente por JS -->
+    </div>
+
+    <!-- MENSAJE SIN RESULTADOS -->
+    <div id="no-results" class="hidden text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm mt-4">
+      <div class="inline-flex p-4 rounded-full bg-slate-100 text-slate-400 mb-3">
+        <i data-lucide="building-2" class="w-10 h-10"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-700">No se encontraron PYMEs</h3>
+      <p class="text-slate-500 text-sm mt-1">Prueba ajustando los filtros o realizando otra búsqueda.</p>
+      <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-brand-50 text-brand-600 font-medium rounded-lg hover:bg-brand-100 text-sm transition">
+        Restablecer Filtros
+      </button>
+    </div>
+
+  </main>
+
+  <!-- MODAL DE DETALLE Y ANÁLISIS DE LA PYME -->
+  <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 sm:p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden transform transition-all my-auto">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-950 text-white p-6 flex justify-between items-start border-b border-slate-800 relative">
+        <div class="flex items-start space-x-4">
+          <div id="modal-icon" class="p-3 bg-slate-800 text-emerald-400 rounded-xl border border-slate-700">
+            <i data-lucide="building" class="w-8 h-8"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-3">
+              <h2 id="modal-title" class="text-2xl font-bold text-white">Nombre Empresa</h2>
+              <span id="modal-status" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Abierta</span>
+            </div>
+            <p id="modal-subtitle" class="text-slate-400 text-sm mt-1">Industria | Ubicación</p>
+          </div>
+        </div>
+        <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Modal Content Scrollable -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 text-slate-700">
+        
+        <!-- RESUMEN EJECUTIVO Y BUSCADO -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span class="text-xs font-semibold text-slate-500 uppercase block mb-1">Monto Solicitado</span>
+            <span id="modal-monto" class="text-2xl font-extrabold text-slate-900">$0</span>
+            <span id="modal-instrumento" class="text-xs block text-slate-500 mt-1">Instrumento</span>
+          </div>
+          <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+            <span class="text-xs font-semibold text-emerald-800 uppercase block mb-1">Retorno / TIR Proyectado</span>
+            <span id="modal-roi" class="text-2xl font-extrabold text-emerald-600">0%</span>
+            <span id="modal-plazo" class="text-xs block text-emerald-700 mt-1">Plazo</span>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span class="text-xs font-semibold text-slate-500 uppercase block mb-1">Ticket Mínimo Inversión</span>
+            <span id="modal-ticket" class="text-2xl font-extrabold text-slate-900">$0</span>
+            <span id="modal-riesgo" class="text-xs font-semibold inline-block px-2 py-0.5 rounded mt-1">Riesgo</span>
+          </div>
+        </div>
+
+        <!-- INDICADORES FINANCIEROS CLAVE (KPIs) -->
+        <div>
+          <h3 class="text-base font-bold text-slate-900 mb-3 flex items-center">
+            <i data-lucide="bar-chart-3" class="w-5 h-5 mr-2 text-brand-600"></i>
+            Indicadores Financieros Clave (KPIs)
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-900 text-white p-4 rounded-xl">
+            <div>
+              <span class="text-xs text-slate-400 block">Ventas Anuales (ARR)</span>
+              <span id="modal-ventas" class="text-lg font-bold text-white">$0</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block">Margen EBITDA</span>
+              <span id="modal-ebitda" class="text-lg font-bold text-emerald-400">0%</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block">Flujo Caja Libre (FCF)</span>
+              <span id="modal-fcf" class="text-lg font-bold text-cyan-400">$0</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block">Razón Deuda / Capital</span>
+              <span id="modal-deuda" class="text-lg font-bold text-amber-400">0.0x</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DETALLES CUALITATIVOS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wider text-xs mb-1">Historia & Modelo de Negocio</h4>
+              <p id="modal-historia" class="text-sm leading-relaxed text-slate-600">Descripción aquí...</p>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wider text-xs mb-1">Equipo Fundador</h4>
+              <p id="modal-equipo" class="text-sm leading-relaxed text-slate-600">Fundadores...</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wider text-xs mb-1">Uso Propuesto de los Fondos</h4>
+              <p id="modal-uso-fondos" class="text-sm leading-relaxed text-slate-600">Plan de uso de capital...</p>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wider text-xs mb-1">Garantías / Estructura del Trato</h4>
+              <p id="modal-garantias" class="text-sm leading-relaxed text-slate-600">Detalles de garantías...</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-slate-200">
+
+        <!-- SECCIÓN INTERACTIVA DE NOTAS Y TESIS DE ANALISTA -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-base font-bold text-slate-900 flex items-center">
+              <i data-lucide="message-square" class="w-5 h-5 mr-2 text-brand-600"></i>
+              Notas de Análisis y Tesis del Inversionista
+            </h3>
+            <span class="text-xs text-slate-400">Guardado local dinámico</span>
+          </div>
+
+          <!-- Formulario Agregar Nota -->
+          <div class="flex gap-2 mb-4">
+            <input 
+              type="text" 
+              id="new-note-input"
+              placeholder="Escribe una observación, pro/contra o duda para el seguimiento..." 
+              class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              onkeypress="if(event.key === 'Enter') addNoteToCurrentPyme()"
+            >
+            <button onclick="addNoteToCurrentPyme()" class="bg-slate-900 text-white font-medium px-4 py-2 rounded-lg text-sm hover:bg-slate-800 transition flex items-center">
+              <i data-lucide="send" class="w-4 h-4 mr-1"></i> Agregar
+            </button>
+          </div>
+
+          <!-- Lista de Comentarios -->
+          <div id="modal-notes-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center">
+        <button onclick="deleteCurrentPyme()" class="text-rose-600 hover:text-rose-700 text-sm font-semibold flex items-center px-3 py-2 rounded-lg hover:bg-rose-50 transition">
+          <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Eliminar Registro
+        </button>
+        <button onclick="closeDetailModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold px-5 py-2 rounded-lg text-sm transition">
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL PARA FORMULARIO DE NUEVA PYME -->
+  <div id="new-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 sm:p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden transform transition-all my-auto">
+      
+      <!-- Header Form -->
+      <div class="bg-slate-900 text-white p-5 flex justify-between items-center border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i>
+          <h2 class="text-xl font-bold">Registrar Nueva PYME para Análisis</h2>
+        </div>
+        <button onclick="closeNewModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Form Body Scrollable -->
+      <form id="pyme-form" onsubmit="handleCreatePyme(event)" class="p-6 overflow-y-auto space-y-6 text-sm">
+        
+        <!-- Datos Principales -->
+        <div>
+          <h3 class="text-xs font-bold uppercase text-brand-600 mb-3 tracking-wider">1. Información General</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Nombre de la Empresa *</label>
+              <input type="text" id="form-nombre" required placeholder="Ej. AgroTech del Valle" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Industria / Sector *</label>
+              <select id="form-industria" required class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+                <option value="Agrícola">Agrícola / Agroindustria</option>
+                <option value="Tecnológica">Tecnológica / Software / SaaS</option>
+                <option value="Hostelería">Hostelería / Turismo / Gastronomía</option>
+                <option value="Manufactura">Manufactura / Industrial</option>
+                <option value="Comercio">Comercio / Servicios B2B</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Ubicación *</label>
+              <input type="text" id="form-ubicacion" required placeholder="Ej. Mendoza, Argentina" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Estado de Oportunidad</label>
+              <select id="form-estado" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+                <option value="Abierta">Abierta</option>
+                <option value="En Evaluación">En Evaluación</option>
+                <option value="Financiada">Financiada</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Condición de Inversión -->
+        <div>
+          <h3 class="text-xs font-bold uppercase text-brand-600 mb-3 tracking-wider">2. Condiciones de la Inversión</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Monto Buscado ($) *</label>
+              <input type="number" id="form-monto" required placeholder="Ej. 120000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Retorno / TIR Estimado (%) *</label>
+              <input type="number" step="0.1" id="form-roi" required placeholder="Ej. 18.5" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Ticket Mínimo ($) *</label>
+              <input type="number" id="form-ticket" required placeholder="Ej. 5000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Tipo de Instrumento *</label>
+              <select id="form-instrumento" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+                <option value="Deuda Privada con Garantía">Deuda Privada con Garantía</option>
+                <option value="Participación de Capital (Equity)">Participación de Capital (Equity)</option>
+                <option value="Nota Convertible">Nota Convertible</option>
+                <option value="Revenue Share (Compartición Ingresos)">Revenue Share</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Plazo estimado</label>
+              <input type="text" id="form-plazo" placeholder="Ej. 36 meses" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Nivel de Riesgo</label>
+              <select id="form-riesgo" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+                <option value="Bajo">Bajo</option>
+                <option value="Moderado">Moderado</option>
+                <option value="Alto">Alto</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs Financieros -->
+        <div>
+          <h3 class="text-xs font-bold uppercase text-brand-600 mb-3 tracking-wider">3. Indicadores Financieros (KPIs)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Ventas Anuales ($)</label>
+              <input type="number" id="form-ventas" placeholder="Ej. 350000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Margen EBITDA (%)</label>
+              <input type="number" step="0.1" id="form-ebitda" placeholder="Ej. 24" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Flujo Caja Libre ($)</label>
+              <input type="number" id="form-fcf" placeholder="Ej. 45000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Deuda / Capital (x)</label>
+              <input type="number" step="0.1" id="form-deuda" placeholder="Ej. 0.8" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Descripción Cualitativa -->
+        <div>
+          <h3 class="text-xs font-bold uppercase text-brand-600 mb-3 tracking-wider">4. Análisis Cualitativo</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Historia y Modelo de Negocio</label>
+              <textarea id="form-historia" rows="2" placeholder="Resumen de trayectoria y cómo generan ingresos..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">Equipo Fundador</label>
+              <input type="text" id="form-equipo" placeholder="Ej. Carlos Ruiz (CEO, 12 yrs exp en Agronomía)" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block font-medium text-slate-700 mb-1">Uso Propuesto de Fondos</label>
+                <textarea id="form-uso-fondos" rows="2" placeholder="Adquisición de maquinaria, expansión comercial..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+              </div>
+              <div>
+                <label class="block font-medium text-slate-700 mb-1">Garantías / Respaldo</label>
+                <textarea id="form-garantias" rows="2" placeholder="Hipoteca de terreno, pignoración de inventario..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="pt-4 border-t border-slate-200 flex justify-end space-x-3">
+          <button type="button" onclick="closeNewModal()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition">Cancelar</button>
+          <button type="submit" class="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg shadow-lg shadow-emerald-500/20 transition">Guardar PYME</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- SCRIPT DE LÓGICA DE LA APLICACIÓN -->
+  <script>
+    // DATOS DE DEMOSTRACIÓN INICIALES
+    const INITIAL_DEMO_DATA = [
+      {
+        id: "pyme-1",
+        nombre: "Finca Orgánica San Rafael",
+        industria: "Agrícola",
+        ubicacion: "Córdoba, Argentina",
+        estado: "Abierta",
+        monto: 85000,
+        roi: 19.5,
+        ticket: 5000,
+        instrumento: "Deuda Privada con Garantía",
+        plazo: "36 meses",
+        riesgo: "Bajo",
+        ventas: 240000,
+        ebitda: 28.5,
+        fcf: 42000,
+        deuda: 0.4,
+        historia: "Productora boutique de aceite de oliva virgen extra orgánico con exportaciones consolidadas a Brasil y certificación europea.",
+        equipo: "Ing. Agrónomo Mateo Rossi (15 años de experiencia) y Lucía Rossi (Directora Comercial).",
+        usoFondos: "Instalación de sistema de riego fotovoltaico por goteo para reducir costos de energía en un 40% e incrementar producción en un 25%.",
+        garantias: "Garantía prendaria en primer grado sobre la maquinaria almazara y finca de 15 hectáreas.",
+        notes: [
+          { date: "15 Oct 2026", text: "Visita en terreno realizada. Las instalaciones operan al 90% de capacidad. Buen colateral tangible." },
+          { date: "22 Oct 2026", text: "Revisión de estados contables 2024-2025 confirma flujo constante." }
+        ]
+      },
+      {
+        id: "pyme-2",
+        nombre: "LogiPulse SaaS",
+        industria: "Tecnológica",
+        ubicacion: "Santiago, Chile",
+        estado: "En Evaluación",
+        monto: 150000,
+        roi: 24.0,
+        ticket: 10000,
+        instrumento: "Nota Convertible",
+        plazo: "24 meses",
+        riesgo: "Alto",
+        ventas: 180000,
+        ebitda: 15.0,
+        fcf: 22000,
+        deuda: 0.1,
+        historia: "Software en la nube de optimización de rutas de última milla para distribuidoras alimenticias medianas en Latinoamérica.",
+        equipo: "Sofia Valenzuela (Ex-Uber Tech Lead) y Tomas Medina (Emprendedor serial B2B).",
+        usoFondos: "Contratación de 2 desarrolladores Senior y aceleración de pauta de marketing digital B2B.",
+        garantias: "Participación preferente con descuento del 20% en la siguiente ronda Serie A.",
+        notes: [
+          { date: "02 Oct 2026", text: "Métricas de Churn muy bajas (<1.2% mensual). Crecimiento interanual del 80%." }
+        ]
+      },
+      {
+        id: "pyme-3",
+        nombre: "EcoLodge Sendero Azul",
+        industria: "Hostelería",
+        ubicacion: "Bariloche, Argentina",
+        estado: "Abierta",
+        monto: 110000,
+        roi: 16.8,
+        ticket: 5000,
+        instrumento: "Revenue Share (Compartición Ingresos)",
+        plazo: "48 meses",
+        riesgo: "Moderado",
+        ventas: 210000,
+        ebitda: 32.0,
+        fcf: 38000,
+        deuda: 0.6,
+        historia: "Hotel de montaña autosustentable centrado en turismo de bienestar y experiencias de senderismo.",
+        equipo: "Familia Peralta (Operadores hoteleros por 20 años).",
+        usoFondos: "Construcción de 4 domos glamping premium para aumentar tarifa promedio diaria.",
+        garantias: "Pagos trimestrales fijados en un 8% de los ingresos brutos hasta cubrir 1.5x la inversión.",
+        notes: [
+          { date: "10 Sep 2026", text: "Reservas confirmadas para temporada de verano al 75%." }
+        ]
+      },
+      {
+        id: "pyme-4",
+        nombre: "Envases EcoPack",
+        industria: "Manufactura",
+        ubicacion: "Querétaro, México",
+        estado: "Financiada",
+        monto: 200000,
+        roi: 14.5,
+        ticket: 15000,
+        instrumento: "Deuda Privada con Garantía",
+        plazo: "36 meses",
+        riesgo: "Bajo",
+        ventas: 620000,
+        ebitda: 21.0,
+        fcf: 85000,
+        deuda: 1.1,
+        historia: "Fábrica de empaques biodegradables a base de bagazo de caña de azúcar para la industria de restaurantes.",
+        equipo: "Roberto Gómez (Director de Operaciones Industriales).",
+        usoFondos: "Compra de extrusora de alta velocidad importada.",
+        garantias: "Garantía hipotecaria sobre la nave industrial.",
+        notes: [
+          { date: "01 Aug 2026", text: "Ronda completada con éxito. Pagos al día." }
+        ]
+      },
+      {
+        id: "pyme-5",
+        nombre: "Distribuidora Médica Norte",
+        industria: "Comercio",
+        ubicacion: "Monterrey, México",
+        estado: "Abierta",
+        monto: 95000,
+        roi: 17.2,
+        ticket: 5000,
+        instrumento: "Participación de Capital (Equity)",
+        plazo: "60 meses",
+        riesgo: "Moderado",
+        ventas: 410000,
+        ebitda: 18.2,
+        fcf: 49000,
+        deuda: 0.7,
+        historia: "Comercializadora e importadora directa de insumos descartables de grado médico para clínicas privadas.",
+        equipo: "Dra. Elena Ramos y Lic. Marco Polo.",
+        usoFondos: "Capital de trabajo para licitación de gran volumen con red de sanatorios.",
+        garantias: "Cesión de derechos de cobro de las facturas gubernamentales/clínicas (Factoring).",
+        notes: []
+      }
+    ];
+
+    // ESTADO DE LA APLICACIÓN
+    let pymes = [];
+    let activeIndustry = "ALL";
+    let currentPymeId = null;
+
+    // ICONOS POR INDUSTRIA
+    const INDUSTRY_ICONS = {
+      "Agrícola": "sprout",
+      "Tecnológica": "cpu",
+      "Hostelería": "hotel",
+      "Manufactura": "factory",
+      "Comercio": "shopping-bag"
+    };
+
+    // INICIALIZACIÓN
+    window.onload = function() {
+      loadData();
+      renderIndustryTabs();
+      applyFilters();
+      updateGlobalStats();
+      lucide.createIcons();
+    };
+
+    // CARGAR DATOS (LOCALSTORAGE O DEMO)
+    function loadData() {
+      const stored = localStorage.getItem('investlocal_pymes');
+      if (stored) {
+        try {
+          pymes = JSON.parse(stored);
+        } catch(e) {
+          pymes = [...INITIAL_DEMO_DATA];
+        }
+      } else {
+        pymes = [...INITIAL_DEMO_DATA];
+        saveData();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('investlocal_pymes', JSON.stringify(pymes));
+    }
+
+    function resetToDemoData() {
+      if(confirm("¿Deseas restaurar la base de datos a los ejemplos por defecto?")) {
+        pymes = [...INITIAL_DEMO_DATA];
+        saveData();
+        applyFilters();
+        updateGlobalStats();
+      }
+    }
+
+    // ACTUALIZAR ESTADÍSTICAS GLOBALES
+    function updateGlobalStats() {
+      document.getElementById('stat-total').innerText = pymes.length;
+      
+      if (pymes.length === 0) {
+        document.getElementById('stat-roi-avg').innerText = '0%';
+        document.getElementById('stat-capital').innerText = '$0';
+        return;
+      }
+
+      const avgRoi = (pymes.reduce((acc, item) => acc + Number(item.roi), 0) / pymes.length).toFixed(1);
+      const totalCapital = pymes.reduce((acc, item) => acc + Number(item.monto), 0);
+
+      document.getElementById('stat-roi-avg').innerText = `${avgRoi}%`;
+      document.getElementById('stat-capital').innerText = `$${(totalCapital/1000).toFixed(0)}k`;
+    }
+
+    // PESTAÑAS DE INDUSTRIAS
+    function renderIndustryTabs() {
+      const container = document.getElementById('industry-tabs');
+      const industries = ["ALL", "Agrícola", "Tecnológica", "Hostelería", "Manufactura", "Comercio"];
+
+      container.innerHTML = industries.map(ind => {
+        const isActive = ind === activeIndustry;
+        const label = ind === "ALL" ? "Todas las Industrias" : ind;
+        const iconName = ind === "ALL" ? "layers" : (INDUSTRY_ICONS[ind] || "building");
+        
+        return `
+          <button 
+            onclick="setIndustryFilter('${ind}')"
+            class="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+              isActive 
+                ? 'bg-slate-900 text-white shadow-md' 
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }"
+          >
+            <i data-lucide="${iconName}" class="w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-slate-400'}"></i>
+            <span>${label}</span>
+          </button>
+        `;
+      }).join('');
+      
+      lucide.createIcons();
+    }
+
+    function setIndustryFilter(ind) {
+      activeIndustry = ind;
+      renderIndustryTabs();
+      applyFilters();
+    }
+
+    // FILTRAR Y RENDERIZAR TARJETAS
+    function applyFilters() {
+      const searchQuery = document.getElementById('search-input').value.toLowerCase();
+      const riskQuery = document.getElementById('risk-filter').value;
+      const statusQuery = document.getElementById('status-filter').value;
+
+      const filtered = pymes.filter(item => {
+        const matchIndustry = activeIndustry === "ALL" || item.industria === activeIndustry;
+        const matchSearch = item.nombre.toLowerCase().includes(searchQuery) || 
+                            item.historia.toLowerCase().includes(searchQuery) ||
+                            item.ubicacion.toLowerCase().includes(searchQuery);
+        const matchRisk = riskQuery === "ALL" || item.riesgo === riskQuery;
+        const matchStatus = statusQuery === "ALL" || item.estado === statusQuery;
+
+        return matchIndustry && matchSearch && matchRisk && matchStatus;
+      });
+
+      renderCards(filtered);
+    }
+
+    function handleSearch() {
+      applyFilters();
+    }
+
+    function resetFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('risk-filter').value = 'ALL';
+      document.getElementById('status-filter').value = 'ALL';
+      activeIndustry = "ALL";
+      renderIndustryTabs();
+      applyFilters();
+    }
+
+    // RENDERIZAR GRID DE TARJETAS
+    function renderCards(list) {
+      const grid = document.getElementById('pymes-grid');
+      const noResults = document.getElementById('no-results');
+
+      if (list.length === 0) {
+        grid.innerHTML = '';
+        noResults.classList.remove('hidden');
+        return;
+      }
+
+      noResults.classList.add('hidden');
+
+      grid.innerHTML = list.map(item => {
+        const iconName = INDUSTRY_ICONS[item.industria] || "building";
+        
+        // Colores de Riesgo
+        let riskBadge = 'bg-slate-100 text-slate-700';
+        if (item.riesgo === 'Bajo') riskBadge = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        if (item.riesgo === 'Moderado') riskBadge = 'bg-amber-100 text-amber-800 border-amber-200';
+        if (item.riesgo === 'Alto') riskBadge = 'bg-rose-100 text-rose-800 border-rose-200';
+
+        // Colores de Estado
+        let statusBadge = 'bg-slate-100 text-slate-700';
+        if (item.estado === 'Abierta') statusBadge = 'bg-emerald-50 text-emerald-700 border-emerald-300';
+        if (item.estado === 'En Evaluación') statusBadge = 'bg-cyan-50 text-cyan-700 border-cyan-300';
+        if (item.estado === 'Financiada') statusBadge = 'bg-slate-200 text-slate-600 border-slate-300';
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group">
+            
+            <div class="p-5">
+              <!-- Top Header -->
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center space-x-3">
+                  <div class="p-2.5 bg-slate-900 text-emerald-400 rounded-xl group-hover:bg-brand-600 group-hover:text-white transition-colors">
+                    <i data-lucide="${iconName}" class="w-6 h-6"></i>
+                  </div>
+                  <div>
+                    <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">${item.industria}</span>
+                    <h3 class="text-lg font-bold text-slate-900 line-clamp-1 group-hover:text-brand-600 transition-colors">${item.nombre}</h3>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2 text-xs text-slate-500 mb-4">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span>${item.ubicacion}</span>
+              </div>
+
+              <!-- Badges Info -->
+              <div class="flex items-center gap-2 mb-4">
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full border ${statusBadge}">${item.estado}</span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full border ${riskBadge}">Riesgo ${item.riesgo}</span>
+              </div>
+
+              <p class="text-slate-600 text-sm line-clamp-2 mb-4 leading-relaxed">${item.historia}</p>
+
+              <!-- Métricas Principales -->
+              <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                  <span class="text-[11px] font-medium text-slate-400 uppercase block">Capital Buscado</span>
+                  <span class="text-base font-extrabold text-slate-900">$${Number(item.monto).toLocaleString()}</span>
+                </div>
+                <div>
+                  <span class="text-[11px] font-medium text-slate-400 uppercase block">Retorno Proyectado</span>
+                  <span class="text-base font-extrabold text-emerald-600">${item.roi}% TIR</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Footer -->
+            <div class="px-5 py-3.5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+              <span class="text-xs text-slate-500 font-medium">Ticket: $${Number(item.ticket).toLocaleString()}</span>
+              <button 
+                onclick="openDetailModal('${item.id}')"
+                class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center group-hover:translate-x-1 transition-transform"
+              >
+                Ver Análisis Completo <i data-lucide="chevron-right" class="w-4 h-4 ml-0.5"></i>
+              </button>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // ABRIR DETALLE MODAL
+    function openDetailModal(id) {
+      currentPymeId = id;
+      const item = pymes.find(p => p.id === id);
+      if (!item) return;
+
+      document.getElementById('modal-title').innerText = item.nombre;
+      document.getElementById('modal-subtitle').innerText = `${item.industria} • ${item.ubicacion}`;
+      document.getElementById('modal-status').innerText = item.estado;
+      
+      document.getElementById('modal-monto').innerText = `$${Number(item.monto).toLocaleString()}`;
+      document.getElementById('modal-instrumento').innerText = item.instrumento;
+      
+      document.getElementById('modal-roi').innerText = `${item.roi}%`;
+      document.getElementById('modal-plazo').innerText = `Plazo: ${item.plazo || 'No especificado'}`;
+      
+      document.getElementById('modal-ticket').innerText = `$${Number(item.ticket).toLocaleString()}`;
+      
+      const riskEl = document.getElementById('modal-riesgo');
+      riskEl.innerText = `Riesgo ${item.riesgo}`;
+      riskEl.className = `text-xs font-semibold inline-block px-2.5 py-0.5 rounded ${
+        item.riesgo === 'Bajo' ? 'bg-emerald-100 text-emerald-800' :
+        item.riesgo === 'Moderado' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+      }`;
+
+      // KPIs Financieros
+      document.getElementById('modal-ventas').innerText = item.ventas ? `$${Number(item.ventas).toLocaleString()}` : 'N/D';
+      document.getElementById('modal-ebitda').innerText = item.ebitda ? `${item.ebitda}%` : 'N/D';
+      document.getElementById('modal-fcf').innerText = item.fcf ? `$${Number(item.fcf).toLocaleString()}` : 'N/D';
+      document.getElementById('modal-deuda').innerText = item.deuda ? `${item.deuda}x` : 'N/D';
+
+      // Detalles cualitativos
+      document.getElementById('modal-historia').innerText = item.historia || 'Sin información registrada.';
+      document.getElementById('modal-equipo').innerText = item.equipo || 'Sin información registrada.';
+      document.getElementById('modal-uso-fondos').innerText = item.usoFondos || 'Sin información registrada.';
+      document.getElementById('modal-garantias').innerText = item.garantias || 'Sin garantías especificados.';
+
+      // Render Comentarios
+      renderNotesList(item.notes || []);
+
+      document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+      currentPymeId = null;
+    }
+
+    // GESTIÓN DE NOTAS / TESIS DE ANALISTA
+    function renderNotesList(notes) {
+      const listContainer = document.getElementById('modal-notes-list');
+      if (!notes || notes.length === 0) {
+        listContainer.innerHTML = `<p class="text-xs text-slate-400 italic py-2">No hay observaciones adicionales para esta PYME.</p>`;
+        return;
+      }
+
+      listContainer.innerHTML = notes.map((n, idx) => `
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs flex justify-between items-start">
+          <div>
+            <span class="text-[10px] text-slate-400 font-medium block mb-0.5">${n.date}</span>
+            <p class="text-slate-700 font-medium">${n.text}</p>
+          </div>
+          <button onclick="removeNote(${idx})" class="text-slate-400 hover:text-rose-600 transition ml-2">
+            <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function addNoteToCurrentPyme() {
+      const input = document.getElementById('new-note-input');
+      const text = input.value.trim();
+      if (!text || !currentPymeId) return;
+
+      const item = pymes.find(p => p.id === currentPymeId);
+      if (item) {
+        if (!item.notes) item.notes = [];
+        const today = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+        item.notes.unshift({ date: today, text: text });
+        saveData();
+        renderNotesList(item.notes);
+        input.value = '';
+      }
+    }
+
+    function removeNote(index) {
+      const item = pymes.find(p => p.id === currentPymeId);
+      if (item && item.notes) {
+        item.notes.splice(index, 1);
+        saveData();
+        renderNotesList(item.notes);
+      }
+    }
+
+    function deleteCurrentPyme() {
+      if (!currentPymeId) return;
+      if (confirm("¿Estás seguro de que deseas eliminar este registro de PYME?")) {
+        pymes = pymes.filter(p => p.id !== currentPymeId);
+        saveData();
+        closeDetailModal();
+        applyFilters();
+        updateGlobalStats();
+      }
+    }
+
+    // MODAL REGISTRO NUEVA PYME
+    function openNewModal() {
+      document.getElementById('pyme-form').reset();
+      document.getElementById('new-modal').classList.remove('hidden');
+    }
+
+    function closeNewModal() {
+      document.getElementById('new-modal').classList.add('hidden');
+    }
+
+    function handleCreatePyme(e) {
+      e.preventDefault();
+
+      const newPyme = {
+        id: "pyme-" + Date.now(),
+        nombre: document.getElementById('form-nombre').value,
+        industria: document.getElementById('form-industria').value,
+        ubicacion: document.getElementById('form-ubicacion').value,
+        estado: document.getElementById('form-estado').value,
+        monto: Number(document.getElementById('form-monto').value),
+        roi: Number(document.getElementById('form-roi').value),
+        ticket: Number(document.getElementById('form-ticket').value),
+        instrumento: document.getElementById('form-instrumento').value,
+        plazo: document.getElementById('form-plazo').value,
+        riesgo: document.getElementById('form-riesgo').value,
+        ventas: Number(document.getElementById('form-ventas').value) || 0,
+        ebitda: Number(document.getElementById('form-ebitda').value) || 0,
+        fcf: Number(document.getElementById('form-fcf').value) || 0,
+        deuda: Number(document.getElementById('form-deuda').value) || 0,
+        historia: document.getElementById('form-historia').value,
+        equipo: document.getElementById('form-equipo').value,
+        usoFondos: document.getElementById('form-uso-fondos').value,
+        garantias: document.getElementById('form-garantias').value,
+        notes: []
+      };
+
+      pymes.unshift(newPyme);
+      saveData();
+      closeNewModal();
+      applyFilters();
+      updateGlobalStats();
+    }
+  </script>
+</body>
+</html>

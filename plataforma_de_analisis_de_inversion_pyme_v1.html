@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kawori - Plataforma de Análisis de Inversión PYME</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="Kawori_Logo_Gemini_Generated_Image_d14uszd14uszd14u.jpg">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                            950: '#022c22'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .dragover {
+            border-color: #10b981 !important;
+            background-color: #f0fdf4 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- NAVEGACIÓN PRINCIPAL -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Brand / Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="setFilter('Todas'); applyFilters();">
+                <img src="Kawori_Logo_Gemini_Generated_Image_d14uszd14uszd14u.jpg" alt="Kawori Logo" class="w-10 h-10 rounded-xl object-cover border border-slate-700/80 shadow-md shadow-emerald-500/20">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl font-extrabold tracking-tight text-white">Kawori</span>
+                        <span class="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">v1.2</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 font-medium">Inversiones Locales & Análisis PYME</p>
+                </div>
+            </div>
+
+            <!-- Acciones de Cabecera -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Botón Carga Masiva CSV -->
+                <button onclick="openCsvModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium px-3.5 py-2 rounded-xl transition text-xs sm:text-sm flex items-center border border-slate-700 shadow-sm" title="Importar proyectos masivamente mediante archivo CSV">
+                    <i data-lucide="file-up" class="w-4 h-4 mr-1.5 text-emerald-400"></i>
+                    <span>Carga Masiva (CSV)</span>
+                </button>
+
+                <!-- Botón Centro de Respaldos -->
+                <button onclick="openBackupModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium px-3.5 py-2 rounded-xl transition text-xs sm:text-sm flex items-center border border-slate-700 shadow-sm" title="Respaldos de proyectos y aplicación">
+                    <i data-lucide="database" class="w-4 h-4 mr-1.5 text-cyan-400"></i>
+                    <span>Respaldos</span>
+                </button>
+
+                <!-- Botón Nueva PYME -->
+                <button onclick="openFormModal()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl transition text-xs sm:text-sm flex items-center shadow-lg shadow-emerald-500/20">
+                    <i data-lucide="plus-circle" class="w-4 h-4 mr-1.5"></i>
+                    <span>Nueva PYME</span>
+                </button>
+
+                <!-- Botón Guía Despliegue & Firebase -->
+                <button onclick="openArchitectureModal()" title="Guía de despliegue y Firebase" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition">
+                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Botón Acerca de -->
+                <button onclick="openAboutModal()" title="Información sobre Kawori" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Restaurar Datos Demo -->
+                <button onclick="resetDemoData()" title="Restaurar datos de prueba" class="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-xl transition">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- BANNER DE RESUMEN & KPIs GLOBALES -->
+        <div class="mb-8 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute right-20 top-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold mb-3">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                        Portafolio de Inversión Local PYME
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Análisis y Selección de PYMEs</h1>
+                    <p class="text-slate-400 text-sm mt-1.5 max-w-2xl leading-relaxed">
+                        Herramienta integral para evaluar viabilidad, riesgo, indicadores financieros (EBITDA, FCF, Deuda) y tesis de financiamiento en empresas de economía real.
+                    </p>
+                </div>
+                
+                <!-- Tarjetas KPIs Globales -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-900/80 p-3 rounded-2xl border border-slate-800 backdrop-blur-sm">
+                    <div class="text-center px-4 py-2 border-r border-slate-800">
+                        <span class="text-[11px] text-slate-400 block uppercase font-medium">PYMEs Registradas</span>
+                        <span id="stat-total" class="text-2xl font-black text-white">0</span>
+                    </div>
+                    <div class="text-center px-4 py-2 border-r border-slate-800">
+                        <span class="text-[11px] text-slate-400 block uppercase font-medium">Capital Solicitado</span>
+                        <span id="stat-capital" class="text-2xl font-black text-cyan-400">$0</span>
+                    </div>
+                    <div class="text-center px-4 py-2 border-r border-slate-800">
+                        <span class="text-[11px] text-slate-400 block uppercase font-medium">ROI Promedio</span>
+                        <span id="stat-roi" class="text-2xl font-black text-emerald-400">0%</span>
+                    </div>
+                    <div class="text-center px-4 py-2">
+                        <span class="text-[11px] text-slate-400 block uppercase font-medium">Oportunidades</span>
+                        <span id="stat-open" class="text-2xl font-black text-amber-400">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROLES: INDUSTRIA, BÚSQUEDA Y FILTROS -->
+        <div class="space-y-4 mb-6">
+            <!-- Pestañas de Industrias -->
+            <div class="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none" id="industry-filters">
+                <!-- Se inyecta dinámicamente -->
+            </div>
+
+            <!-- Barra de Búsqueda y Filtros Rápidos -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+                
+                <!-- Buscador -->
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 transform -translate-y-1/2"></i>
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Buscar por nombre, ubicación, palabra clave..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                    >
+                </div>
+
+                <!-- Filtros Secundarios -->
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <!-- Filtro Riesgo -->
+                    <div class="flex items-center space-x-2 w-full sm:w-auto">
+                        <span class="text-xs font-semibold text-slate-500 uppercase">Riesgo:</span>
+                        <select id="risk-filter" onchange="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="ALL">Todos los riesgos</option>
+                            <option value="Bajo">Bajo</option>
+                            <option value="Moderado">Moderado</option>
+                            <option value="Alto">Alto</option>
+                        </select>
+                    </div>
+
+                    <!-- Filtro Estado -->
+                    <div class="flex items-center space-x-2 w-full sm:w-auto">
+                        <span class="text-xs font-semibold text-slate-500 uppercase">Estado:</span>
+                        <select id="status-filter" onchange="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="ALL">Todos los estados</option>
+                            <option value="Abierta">Abierta</option>
+                            <option value="En Evaluación">En Evaluación</option>
+                            <option value="Financiada">Financiada</option>
+                        </select>
+                    </div>
+
+                    <!-- Botón Limpiar Filtros -->
+                    <button onclick="resetFilters()" class="text-xs font-medium text-slate-500 hover:text-emerald-600 underline px-2 py-1">
+                        Limpiar filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECIPIENTE DE TARJETAS PYME -->
+        <div id="pyme-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Se inyecta dinámicamente -->
+        </div>
+
+        <!-- ESTADO VACÍO -->
+        <div id="empty-state" class="hidden text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm mt-4 p-8">
+            <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="building-2" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">No se encontraron PYMEs con estos criterios</h3>
+            <p class="text-slate-500 text-sm mt-1 max-w-md mx-auto">Prueba ajustando los filtros de búsqueda o registra una nueva PYME para comenzar el análisis.</p>
+            <div class="mt-6 flex justify-center gap-3">
+                <button onclick="resetFilters()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition">
+                    Restablecer Filtros
+                </button>
+                <button onclick="openFormModal()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-xs transition">
+                    + Nueva PYME
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <img src="Kawori_Logo_Gemini_Generated_Image_d14uszd14uszd14u.jpg" alt="Kawori Logo" class="w-6 h-6 rounded-lg object-cover border border-slate-200">
+                <span class="font-bold text-slate-800">Kawori Inversiones Locales</span>
+                <span>•</span>
+                <span>Plataforma de Análisis de Inversión PYME</span>
+            </div>
+            <div class="flex items-center gap-4 text-slate-400">
+                <button onclick="openBackupModal()" class="hover:text-slate-700 transition">Copias de Seguridad</button>
+                <button onclick="openCsvModal()" class="hover:text-slate-700 transition">Carga Masiva</button>
+                <button onclick="openArchitectureModal()" class="hover:text-slate-700 transition">Despliegue & Firebase</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: CARGA MASIVA DE PROYECTOS (CSV) -->
+    <!-- ========================================================================= -->
+    <div id="csv-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden my-auto transform transition-all">
+            
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-900 text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-bold">
+                        <i data-lucide="file-up" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white">Carga Masiva de Proyectos (CSV)</h3>
+                        <p class="text-xs text-slate-400">Importa múltiples oportunidades de inversión simultáneamente desde un archivo de hoja de cálculo</p>
+                    </div>
+                </div>
+                <button onclick="closeCsvModal()" class="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 text-sm text-slate-600">
+                
+                <!-- Guía & Botón de Descarga de Plantilla -->
+                <div class="bg-emerald-50/60 border border-emerald-200 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-start gap-3">
+                        <div class="p-2 bg-emerald-100 text-emerald-800 rounded-xl mt-0.5">
+                            <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-emerald-900 text-sm">¿No tienes el formato adecuado?</h4>
+                            <p class="text-xs text-emerald-700 mt-0.5 leading-relaxed">
+                                Descarga la plantilla oficial con ejemplos de columnas como Nombre, Industria, Monto Buscado, ROI, EBITDA, Tesis y Riesgo.
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="downloadCSVTemplate()" class="whitespace-nowrap px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition flex items-center shadow-sm">
+                        <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5"></i>
+                        Descargar Plantilla CSV
+                    </button>
+                </div>
+
+                <!-- Dropzone de archivo -->
+                <div 
+                    id="csv-dropzone" 
+                    onclick="document.getElementById('csv-file-input').click()"
+                    class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-3xl p-8 text-center cursor-pointer transition bg-slate-50/50 hover:bg-emerald-50/20"
+                >
+                    <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleCSVFileSelect(event)">
+                    <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 text-emerald-600 shadow-sm flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="upload-cloud" class="w-7 h-7"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-base">Haz clic para seleccionar o arrastra tu archivo .CSV</h4>
+                    <p class="text-xs text-slate-400 mt-1">Soporta delimitadores por coma (,) o punto y coma (;) con codificación UTF-8</p>
+                    <span class="inline-block mt-3 px-3 py-1 bg-white border border-slate-200 text-slate-600 text-xs font-medium rounded-full shadow-2xs">
+                        Seleccionar archivo desde el equipo
+                    </span>
+                </div>
+
+                <!-- Previsualización de Datos Parseados (Oculto hasta que se cargue un archivo) -->
+                <div id="csv-preview-container" class="hidden space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                            <span class="font-bold text-slate-900 text-sm" id="csv-preview-count">Proyectos listos para importar</span>
+                        </div>
+                        <span id="csv-preview-delim" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">Delimitador: ,</span>
+                    </div>
+
+                    <!-- Tabla de previsualización -->
+                    <div class="border border-slate-200 rounded-2xl overflow-hidden max-h-56 overflow-y-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-2.5">Nombre</th>
+                                    <th class="p-2.5">Industria</th>
+                                    <th class="p-2.5">Monto ($)</th>
+                                    <th class="p-2.5">ROI (%)</th>
+                                    <th class="p-2.5">Riesgo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="csv-preview-table-body" class="divide-y divide-slate-100 bg-white">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Modo de importación -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                        <label class="block text-xs font-bold uppercase text-slate-700 tracking-wider">Modo de integración:</label>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                                <input type="radio" name="csv-import-mode" value="append" checked class="text-emerald-600 focus:ring-emerald-500">
+                                <span><strong>Añadir a los existentes:</strong> Conserva las PYMEs actuales y agrega las nuevas.</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                                <input type="radio" name="csv-import-mode" value="replace" class="text-emerald-600 focus:ring-emerald-500">
+                                <span><strong>Reemplazar todo:</strong> Sustituye la base de datos por los proyectos del CSV.</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                <button onclick="closeCsvModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-200/80 rounded-xl font-medium text-xs transition">
+                    Cancelar
+                </button>
+                <button 
+                    id="csv-confirm-btn" 
+                    onclick="confirmCSVImport()" 
+                    disabled 
+                    class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:pointer-events-none text-slate-950 font-bold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-1.5"
+                >
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    Importar Proyectos
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: CENTRO DE RESPALDOS (PROYECTOS & APLICACIÓN) -->
+    <!-- ========================================================================= -->
+    <div id="backup-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden my-auto transform transition-all">
+            
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-900 text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500 text-slate-950 flex items-center justify-center font-bold">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white">Centro de Respaldos & Copias de Seguridad</h3>
+                        <p class="text-xs text-slate-400">Protege tu información exportando proyectos, estados financieros o la aplicación completa</p>
+                    </div>
+                </div>
+                <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto space-y-5 flex-1 text-sm text-slate-600">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Opción 1: Respaldo Total de Proyectos (JSON) -->
+                    <div class="p-5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl flex flex-col justify-between transition">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="p-2 rounded-lg bg-emerald-100 text-emerald-800">
+                                    <i data-lucide="file-json" class="w-5 h-5"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-base">Respaldo Total de Proyectos</h4>
+                            </div>
+                            <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                                Exporta todos los proyectos, notas de analista, métricas financieras y estructura en un archivo <strong>.JSON</strong> seguro y portable.
+                            </p>
+                        </div>
+                        <button onclick="exportProjectsJSON()" class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
+                            Descargar Respaldo JSON
+                        </button>
+                    </div>
+
+                    <!-- Opción 2: Respaldo Completo de la Aplicación (HTML Autónomo) -->
+                    <div class="p-5 bg-gradient-to-br from-cyan-50/60 to-emerald-50/60 border border-cyan-200 rounded-2xl flex flex-col justify-between transition">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="p-2 rounded-lg bg-cyan-100 text-cyan-800">
+                                    <i data-lucide="app-window" class="w-5 h-5"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-base">Respaldo de la Aplicación</h4>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                                Genera un archivo <strong>.HTML ejecutable autónomo</strong> con toda la plataforma y los proyectos actuales incrustados, listo para abrir sin conexión.
+                            </p>
+                        </div>
+                        <button onclick="exportAppBackup()" class="w-full py-2.5 px-4 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="hard-drive-download" class="w-4 h-4"></i>
+                            Descargar Aplicación (.html)
+                        </button>
+                    </div>
+
+                    <!-- Opción 3: Exportar Proyectos a CSV -->
+                    <div class="p-5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl flex flex-col justify-between transition">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="p-2 rounded-lg bg-amber-100 text-amber-800">
+                                    <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-base">Exportar Proyectos a CSV</h4>
+                            </div>
+                            <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                                Descarga la tabla de proyectos en formato <strong>.CSV</strong> para abrir y manipular directamente en Excel o Google Sheets.
+                            </p>
+                        </div>
+                        <button onclick="exportProjectsCSV()" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="download" class="w-4 h-4 text-amber-400"></i>
+                            Exportar como CSV
+                        </button>
+                    </div>
+
+                    <!-- Opción 4: Restaurar Copia de Seguridad desde Archivo JSON -->
+                    <div class="p-5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl flex flex-col justify-between transition">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="p-2 rounded-lg bg-indigo-100 text-indigo-800">
+                                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-base">Restaurar Copia de Seguridad</h4>
+                            </div>
+                            <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                                Carga un archivo de respaldo previo en formato <strong>.JSON</strong> para recuperar todos tus proyectos guardados.
+                            </p>
+                        </div>
+                        <label class="w-full py-2.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-sm">
+                            <i data-lucide="upload" class="w-4 h-4 text-indigo-600"></i>
+                            Seleccionar Archivo JSON
+                            <input type="file" id="restore-file-input" accept=".json" class="hidden" onchange="handleRestoreJSON(event)">
+                        </label>
+                    </div>
+
+                </div>
+
+                <div class="p-4 bg-slate-100 rounded-2xl border border-slate-200 text-xs text-slate-500 flex items-start gap-2">
+                    <i data-lucide="shield" class="w-4 h-4 text-slate-400 mt-0.5"></i>
+                    <span>Tus datos se almacenan de forma local en el navegador o sincronizados con tu proyecto en Firebase Firestore según tu configuración activa.</span>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button onclick="closeBackupModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl text-xs transition">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 3: ARQUITECTURA & DESPLIEGUE (FIREBASE + GITHUB + VERCEL) -->
+    <!-- ========================================================================= -->
+    <div id="arch-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden my-auto transform transition-all">
+            
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                        <i data-lucide="cpu" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900">Despliegue & Conexión (Antigravity + Firebase + Vercel)</h3>
+                        <p class="text-xs text-slate-500">Flujo de trabajo para sincronizar tu repo en GitHub, Vercel y Firebase</p>
+                    </div>
+                </div>
+                <button onclick="closeArchitectureModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-600">
+                <!-- Flujo Antigravity -> GitHub -> Vercel -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                            <i data-lucide="terminal" class="w-4 h-4 text-emerald-600"></i> 1. Antigravity Local
+                        </div>
+                        <p class="text-xs text-slate-500 mb-2">Clona y edita el repositorio localmente desde tu terminal o IDE:</p>
+                        <code class="block bg-slate-900 text-emerald-400 p-2 rounded-lg text-[11px] overflow-x-auto">git clone https://github.com/dnanton-cr/Kawori.git</code>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                            <i data-lucide="github" class="w-4 h-4"></i> 2. GitHub Repositorio
+                        </div>
+                        <p class="text-xs text-slate-500 mb-2">Cualquier cambio empujado a `main` desencadena la compilación automática en Vercel:</p>
+                        <code class="block bg-slate-900 text-slate-200 p-2 rounded-lg text-[11px] overflow-x-auto">git push origin main</code>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                            <i data-lucide="flame" class="w-4 h-4 text-amber-500"></i> 3. Firebase Firestore
+                        </div>
+                        <p class="text-xs text-slate-500">La aplicación guarda dinámicamente las PYMEs en el proyecto <strong>kawori-d3a38</strong> bajo la colección `/artifacts/{appId}/public/data/pymes`.</p>
+                    </div>
+                </div>
+
+                <!-- Configuración de Firebase -->
+                <div class="bg-amber-50 border border-amber-200 p-5 rounded-2xl text-xs text-amber-900 space-y-2">
+                    <div class="font-bold flex items-center gap-1.5 text-sm">
+                        <i data-lucide="key" class="w-4 h-4 text-amber-600"></i> Persistencia Multi-Usuario en Vivo
+                    </div>
+                    <p class="leading-relaxed">
+                        Para habilitar la persistencia multiusuario en vivo con Firebase, abre tu proyecto en <a href="https://console.firebase.google.com/project/kawori-d3a38/overview" target="_blank" class="underline font-bold">Firebase Console</a>, genera tu <code>firebaseConfig</code> en Ajustes del proyecto y sustituye las llaves en el script principal de este archivo.
+                    </p>
+                    <p class="leading-relaxed font-semibold">
+                        Si las llaves están vacías o la red está inaccesible, el sistema operará automáticamente con <code>localStorage</code> y soporte completo de respaldo / carga masiva.
+                    </p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button onclick="closeArchitectureModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl text-xs transition">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 4: DETALLE & ANÁLISIS DE LA PYME -->
+    <!-- ========================================================================= -->
+    <div id="detail-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden my-auto transform transition-all">
+            
+            <!-- Modal Header -->
+            <div class="bg-slate-950 text-white p-6 flex justify-between items-start border-b border-slate-800">
+                <div class="flex items-start space-x-4">
+                    <div class="p-3 bg-slate-800 text-emerald-400 rounded-2xl border border-slate-700">
+                        <i data-lucide="building" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h2 id="detail-name" class="text-2xl font-extrabold text-white">Nombre Empresa</h2>
+                            <span id="detail-status" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Abierta</span>
+                        </div>
+                        <p id="detail-location-industry" class="text-slate-400 text-sm mt-1 flex items-center gap-1.5">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i>
+                            <span id="detail-location">Ubicación</span>
+                            <span>•</span>
+                            <span id="detail-industry" class="font-medium text-slate-300">Industria</span>
+                        </p>
+                    </div>
+                </div>
+                <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content Scrollable -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 text-slate-700 text-sm">
+                
+                <!-- Resumen de Inversión (3 Bloques) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <span class="text-xs font-semibold text-slate-500 uppercase block mb-1">Monto Solicitado</span>
+                        <span id="detail-target" class="text-2xl font-black text-slate-900">$0</span>
+                        <span id="detail-term" class="text-xs block text-slate-500 mt-1">Plazo: 24 meses</span>
+                    </div>
+                    <div class="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200">
+                        <span class="text-xs font-semibold text-emerald-800 uppercase block mb-1">Retorno / TIR Proyectado</span>
+                        <span id="detail-roi" class="text-2xl font-black text-emerald-600">0%</span>
+                        <span class="text-xs block text-emerald-700 mt-1">Anualizado estimado</span>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <span class="text-xs font-semibold text-slate-500 uppercase block mb-1">Ticket Mínimo</span>
+                        <span id="detail-ticket" class="text-2xl font-black text-slate-900">$0</span>
+                        <div id="detail-tags" class="mt-1 flex items-center gap-2">
+                            <!-- Badges -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicadores Financieros Clave (KPIs) -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-600"></i>
+                        Indicadores Financieros Clave (KPIs)
+                    </h3>
+                    <div class="grid grid-cols-3 gap-3 bg-slate-900 text-white p-4 rounded-2xl">
+                        <div>
+                            <span class="text-xs text-slate-400 block">EBITDA Proyectado / Anual</span>
+                            <span id="detail-ebitda" class="text-lg font-bold text-emerald-400">$0</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Flujo de Caja Libre (FCF)</span>
+                            <span id="detail-fcf" class="text-lg font-bold text-cyan-400">$0</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Razón de Deuda / Ratio</span>
+                            <span id="detail-debt" class="text-lg font-bold text-amber-400">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cualitativo: Historia y Tesis -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1">
+                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="book-open" class="w-3.5 h-3.5 text-slate-500"></i>
+                            Historia & Modelo de Negocio
+                        </h4>
+                        <p id="detail-story" class="text-xs leading-relaxed text-slate-600">Descripción...</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1">
+                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="target" class="w-3.5 h-3.5 text-slate-500"></i>
+                            Tesis de Inversión & Destino de Fondos
+                        </h4>
+                        <p id="detail-thesis" class="text-xs leading-relaxed text-slate-600">Tesis...</p>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Sección de Comentarios / Notas de Análisis -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        <i data-lucide="message-square" class="w-4 h-4 text-emerald-600"></i>
+                        Notas de Análisis & Seguimiento
+                    </h3>
+
+                    <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                        <input 
+                            type="text" 
+                            id="comment-author" 
+                            placeholder="Tu nombre / rol" 
+                            class="sm:w-1/3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                        >
+                        <input 
+                            type="text" 
+                            id="comment-text" 
+                            placeholder="Escribe una observación, nota de debida diligencia o consulta..." 
+                            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                            onkeypress="if(event.key === 'Enter') addComment()"
+                        >
+                        <button onclick="addComment()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-xs transition flex items-center justify-center gap-1">
+                            <i data-lucide="send" class="w-3.5 h-3.5"></i> Agregar
+                        </button>
+                    </div>
+
+                    <div id="comments-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <!-- Notas inyectadas dinámicamente -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center">
+                <button onclick="deleteActivePyme()" class="text-rose-600 hover:text-rose-700 text-xs font-semibold flex items-center px-3 py-2 rounded-xl hover:bg-rose-50 transition">
+                    <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Eliminar Registro
+                </button>
+                <button onclick="closeDetailModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold px-5 py-2 rounded-xl text-xs transition">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 5: FORMULARIO DE NUEVA PYME -->
+    <!-- ========================================================================= -->
+    <div id="form-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden my-auto transform transition-all">
+            
+            <div class="bg-slate-900 text-white p-5 flex justify-between items-center border-b border-slate-800">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i>
+                    <h2 class="text-lg font-bold">Registrar Nueva PYME para Análisis</h2>
+                </div>
+                <button onclick="closeFormModal()" class="text-slate-400 hover:text-white p-1.5 rounded-xl">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="pyme-form" onsubmit="handleFormSubmit(event)" class="p-6 overflow-y-auto space-y-6 text-xs text-slate-700">
+                
+                <!-- 1. Información General -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase text-emerald-700 mb-3 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-3.5 h-3.5"></i> 1. Información General
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Nombre de la Empresa *</label>
+                            <input type="text" id="input-name" required placeholder="Ej. Finca Orgánica San Carlos" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Industria / Sector *</label>
+                            <select id="input-industry" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="Agrícola">Agrícola</option>
+                                <option value="Tecnológica">Tecnológica</option>
+                                <option value="Hostelería">Hostelería</option>
+                                <option value="Comercio / Retail">Comercio / Retail</option>
+                                <option value="Manufactura">Manufactura</option>
+                                <option value="Servicios">Servicios</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Ubicación *</label>
+                            <input type="text" id="input-location" required placeholder="Ej. San Carlos, Alajuela" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Nivel de Riesgo Estimado *</label>
+                            <select id="input-risk" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="Bajo">Bajo</option>
+                                <option value="Moderado">Moderado</option>
+                                <option value="Alto">Alto</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Condiciones de Inversión -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase text-emerald-700 mb-3 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> 2. Condiciones de Inversión
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Monto Buscado ($) *</label>
+                            <input type="number" id="input-target" required placeholder="45000" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Ticket Mínimo ($) *</label>
+                            <input type="number" id="input-ticket" required placeholder="3000" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">ROI Proyectado (%) *</label>
+                            <input type="number" step="0.1" id="input-roi" required placeholder="15.5" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Plazo (meses) *</label>
+                            <input type="number" id="input-term" required placeholder="24" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Indicadores Financieros (KPIs) -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase text-emerald-700 mb-3 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> 3. Métricas Financieras (KPIs)
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">EBITDA ($ / año)</label>
+                            <input type="number" id="input-ebitda" placeholder="28000" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Flujo Caja Libre (FCF $)</label>
+                            <input type="number" id="input-fcf" placeholder="19000" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Razón de Deuda (%)</label>
+                            <input type="number" step="0.1" id="input-debt" placeholder="22" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Cualitativo -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase text-emerald-700 mb-3 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5"></i> 4. Análisis Cualitativo
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Historia y Modelo de Negocio</label>
+                            <textarea id="input-story" rows="2" placeholder="Resumen de la empresa, trayectoria y cómo genera ingresos..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700">Tesis de Inversión y Destino de Fondos</label>
+                            <textarea id="input-thesis" rows="2" placeholder="Objetivo del financiamiento, garantías ofrecidas y mitigantes..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones Formulario -->
+                <div class="pt-4 border-t border-slate-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closeFormModal()" class="px-5 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition">Cancelar</button>
+                    <button type="submit" class="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition">Guardar PYME</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 6: ACERCA DE KAWORI -->
+    <!-- ========================================================================= -->
+    <div id="about-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 my-auto text-sm text-slate-600">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                    <img src="Kawori_Logo_Gemini_Generated_Image_d14uszd14uszd14u.jpg" alt="Kawori Logo" class="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-md">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900">Kawori Inversiones Locales</h3>
+                        <p class="text-xs text-slate-500">Plataforma de análisis de inversión en PYMEs</p>
+                    </div>
+                </div>
+                <button onclick="closeAboutModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <p class="leading-relaxed mb-4">
+                Kawori es un entorno ligero y robusto diseñado para que analistas e inversionistas evalúen oportunidades en empresas de la economía real con métricas financieras claras, tesis de inversión y seguimiento cualitativo.
+            </p>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-2 mb-4">
+                <div class="font-semibold text-slate-800 flex items-center gap-1.5">
+                    <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i> Funciones de Respaldo & Datos
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-slate-600">
+                    <li><strong>Carga Masiva (CSV):</strong> Ingesta masiva con autodetección de delimitador.</li>
+                    <li><strong>Respaldo de Proyectos (.JSON):</strong> Exportación completa de datos y notas.</li>
+                    <li><strong>Respaldo de la Aplicación (.HTML):</strong> Archivo autónomo con datos incrustados.</li>
+                    <li><strong>Sincronización Opcional:</strong> Firebase Firestore o LocalStorage automático.</li>
+                </ul>
+            </div>
+
+            <button onclick="closeAboutModal()" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs transition">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- APPLICATION SCRIPT (STATE, FIREBASE, BACKUP & CSV PARSING) -->
+    <!-- ========================================================================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de Firebase para el proyecto 'kawori-d3a38'
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "",
+            authDomain: "kawori-d3a38.firebaseapp.com",
+            projectId: "kawori-d3a38",
+            storageBucket: "kawori-d3a38.firebasestorage.app",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kawori-app';
+        let db = null;
+        let auth = null;
+        let useFirestore = false;
+
+        // Intentar inicializar Firebase
+        try {
+            if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                useFirestore = true;
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            }
+        } catch (err) {
+            console.warn("Firebase no configurado o sin conexión directa. Se utilizará localStorage.", err);
+            useFirestore = false;
+        }
+
+        // DATOS INICIALES POR DEFECTO
+        const initialPymes = [
+            {
+                id: '1',
+                name: 'Finca Orgánica San Carlos',
+                industry: 'Agrícola',
+                location: 'San Carlos, Alajuela',
+                target_amount: 45000,
+                min_ticket: 3000,
+                expected_roi: 15.5,
+                risk_level: 'Bajo',
+                term_months: 24,
+                ebitda: 28000,
+                free_cash_flow: 19000,
+                debt_ratio: 22,
+                status: 'Abierta',
+                story: 'Empresa familiar dedicada al cultivo de raíz de yuca y plátano para exportación. Cuentan con 7 años en el mercado costarricense.',
+                investment_thesis: 'El financiamiento se destinará a instalar un sistema de riego por goteo automatizado. Garantía prendaria sobre terreno.',
+                comments: [
+                    { author: 'Daniel N.', text: 'Visitamos la finca. Tienen contratos vigentes de compra en San José.', date: '2026-10-15' }
+                ]
+            },
+            {
+                id: '2',
+                name: 'Eco-Lodge & Spa Monteverde',
+                industry: 'Hostelería',
+                location: 'Monteverde, Puntarenas',
+                target_amount: 80000,
+                min_ticket: 5000,
+                expected_roi: 18.0,
+                risk_level: 'Moderado',
+                term_months: 36,
+                ebitda: 52000,
+                free_cash_flow: 31000,
+                debt_ratio: 40,
+                status: 'Abierta',
+                story: 'Boutique eco-lodge de 12 cabañas con un 78% de ocupación promedio anual en zona de alta afluencia de turismo internacional.',
+                investment_thesis: 'Construcción de 4 nuevas villas de lujo y paneles solares para reducir factura eléctrica en un 35%.',
+                comments: [
+                    { author: 'Auditoría', text: 'Licencias de turismo y ambiental en regla.', date: '2026-10-20' }
+                ]
+            },
+            {
+                id: '3',
+                name: 'LogiSoft Centroamérica',
+                industry: 'Tecnológica',
+                location: 'Heredia, Costa Rica',
+                target_amount: 110000,
+                min_ticket: 10000,
+                expected_roi: 24.5,
+                risk_level: 'Alto',
+                term_months: 24,
+                ebitda: 64000,
+                free_cash_flow: 42000,
+                debt_ratio: 15,
+                status: 'En Evaluación',
+                story: 'Plataforma SaaS de ruteo de entregas de última milla para farmacias y supermercados en Costa Rica, Panamá y Guatemala.',
+                investment_thesis: 'Aceleración de equipo comercial regional y desarrollo de módulo de predicción por IA.',
+                comments: []
+            },
+            {
+                id: '4',
+                name: 'BioEmpaques del Valle',
+                industry: 'Manufactura',
+                location: 'Cartago, Costa Rica',
+                target_amount: 60000,
+                min_ticket: 4000,
+                expected_roi: 14.0,
+                risk_level: 'Bajo',
+                term_months: 30,
+                ebitda: 35000,
+                free_cash_flow: 24000,
+                debt_ratio: 28,
+                status: 'Financiada',
+                story: 'Fábrica de empaques compostables a partir de fibras vegetales de piña y banano para el sector gastronómico.',
+                investment_thesis: 'Compra de termoformadora alemana para duplicar capacidad productiva.',
+                comments: []
+            }
+        ];
+
+        // ESTADO GLOBAL DE LA APLICACIÓN
+        window.pymes = [];
+        window.currentFilter = 'Todas';
+        window.searchQuery = '';
+        window.riskFilter = 'ALL';
+        window.statusFilter = 'ALL';
+        window.activePymeId = null;
+
+        // Temporal para carga masiva CSV
+        let pendingCsvPymes = [];
+
+        const industries = ['Todas', 'Agrícola', 'Tecnológica', 'Hostelería', 'Comercio / Retail', 'Manufactura', 'Servicios'];
+
+        const INDUSTRY_ICONS = {
+            'Todas': 'layers',
+            'Agrícola': 'sprout',
+            'Tecnológica': 'cpu',
+            'Hostelería': 'hotel',
+            'Comercio / Retail': 'shopping-bag',
+            'Manufactura': 'factory',
+            'Servicios': 'briefcase'
+        };
+
+        // INICIALIZACIÓN
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFilters();
+            
+            if (useFirestore && db && auth.currentUser) {
+                const pymesRef = collection(db, 'artifacts', appId, 'public', 'data', 'pymes');
+                onSnapshot(pymesRef, (snapshot) => {
+                    window.pymes = snapshot.docs.map(docSnap => ({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    }));
+                    if (window.pymes.length === 0) {
+                        initialPymes.forEach(async (pyme) => {
+                            await addDoc(pymesRef, pyme);
+                        });
+                    }
+                    renderDashboard();
+                }, (error) => {
+                    console.error("Error al sincronizar Firestore:", error);
+                    loadLocalStorage();
+                });
+            } else {
+                loadLocalStorage();
+            }
+
+            // Listener de búsqueda
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                window.searchQuery = e.target.value.toLowerCase();
+                renderDashboard();
+            });
+
+            // Configurar Drag & Drop para CSV
+            setupCsvDragAndDrop();
+        });
+
+        // PERSISTENCIA LOCALSTORAGE
+        function loadLocalStorage() {
+            const saved = localStorage.getItem('kawori_pymes');
+            if (saved) {
+                try {
+                    window.pymes = JSON.parse(saved);
+                } catch(e) {
+                    window.pymes = [...initialPymes];
+                }
+            } else {
+                window.pymes = [...initialPymes];
+                saveLocalStorage();
+            }
+            renderDashboard();
+        }
+
+        function saveLocalStorage() {
+            localStorage.setItem('kawori_pymes', JSON.stringify(window.pymes));
+        }
+
+        async function persistPymes() {
+            saveLocalStorage();
+            if (useFirestore && db) {
+                // En modo firestore, guardamos localmente de caché
+            }
+        }
+
+        window.resetDemoData = async function() {
+            if (confirm('¿Deseas restaurar la base de datos a los ejemplos por defecto de Kawori?')) {
+                window.pymes = [...initialPymes];
+                saveLocalStorage();
+                renderDashboard();
+                showToast("Datos demo restaurados con éxito.", "info");
+            }
+        };
+
+        // RENDER FILTROS DE INDUSTRIA
+        function renderFilters() {
+            const container = document.getElementById('industry-filters');
+            container.innerHTML = industries.map(ind => {
+                const isActive = window.currentFilter === ind;
+                const iconName = INDUSTRY_ICONS[ind] || 'building';
+                return `
+                    <button onclick="setFilter('${ind}')" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                        isActive 
+                            ? 'bg-slate-900 text-white shadow-md' 
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }">
+                        <i data-lucide="${iconName}" class="w-3.5 h-3.5 ${isActive ? 'text-emerald-400' : 'text-slate-400'}"></i>
+                        <span>${ind}</span>
+                    </button>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        window.setFilter = function(ind) {
+            window.currentFilter = ind;
+            renderFilters();
+            renderDashboard();
+        };
+
+        window.applyFilters = function() {
+            window.riskFilter = document.getElementById('risk-filter').value;
+            window.statusFilter = document.getElementById('status-filter').value;
+            renderDashboard();
+        };
+
+        window.resetFilters = function() {
+            window.searchQuery = '';
+            window.currentFilter = 'Todas';
+            window.riskFilter = 'ALL';
+            window.statusFilter = 'ALL';
+            document.getElementById('search-input').value = '';
+            document.getElementById('risk-filter').value = 'ALL';
+            document.getElementById('status-filter').value = 'ALL';
+            renderFilters();
+            renderDashboard();
+        };
+
+        // RENDER DASHBOARD Y TARJETAS
+        function renderDashboard() {
+            const grid = document.getElementById('pyme-grid');
+            const empty = document.getElementById('empty-state');
+
+            const filtered = window.pymes.filter(item => {
+                const itemIndustry = item.industry || item.industria || '';
+                const itemName = item.name || item.nombre || '';
+                const itemLoc = item.location || item.ubicacion || '';
+                const itemStory = item.story || item.historia || '';
+                const itemRisk = item.risk_level || item.riesgo || 'Moderado';
+                const itemStatus = item.status || item.estado || 'Abierta';
+
+                const matchesIndustry = window.currentFilter === 'Todas' || itemIndustry === window.currentFilter;
+                const matchesSearch = itemName.toLowerCase().includes(window.searchQuery) ||
+                                      itemLoc.toLowerCase().includes(window.searchQuery) ||
+                                      itemIndustry.toLowerCase().includes(window.searchQuery) ||
+                                      itemStory.toLowerCase().includes(window.searchQuery);
+                const matchesRisk = window.riskFilter === 'ALL' || itemRisk === window.riskFilter;
+                const matchesStatus = window.statusFilter === 'ALL' || itemStatus === window.statusFilter;
+
+                return matchesIndustry && matchesSearch && matchesRisk && matchesStatus;
+            });
+
+            // Actualizar Métricas de Cabecera
+            document.getElementById('stat-total').innerText = window.pymes.length;
+            const totalCap = window.pymes.reduce((acc, curr) => acc + Number(curr.target_amount || curr.monto || 0), 0);
+            document.getElementById('stat-capital').innerText = `$${totalCap.toLocaleString()}`;
+            const avgRoi = window.pymes.length > 0 
+                ? (window.pymes.reduce((acc, curr) => acc + Number(curr.expected_roi || curr.roi || 0), 0) / window.pymes.length).toFixed(1) 
+                : '0';
+            document.getElementById('stat-roi').innerText = `${avgRoi}%`;
+            const openCount = window.pymes.filter(p => (p.status || p.estado || 'Abierta') === 'Abierta').length;
+            document.getElementById('stat-open').innerText = openCount;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.innerHTML = filtered.map(pyme => {
+                const name = pyme.name || pyme.nombre || 'Sin nombre';
+                const industry = pyme.industry || pyme.industria || 'General';
+                const location = pyme.location || pyme.ubicacion || 'Costa Rica';
+                const risk = pyme.risk_level || pyme.riesgo || 'Moderado';
+                const status = pyme.status || pyme.estado || 'Abierta';
+                const target = Number(pyme.target_amount || pyme.monto || 0);
+                const ticket = Number(pyme.min_ticket || pyme.ticket || 0);
+                const roi = pyme.expected_roi || pyme.roi || 0;
+                const story = pyme.story || pyme.historia || 'Sin descripción registrada.';
+                const iconName = INDUSTRY_ICONS[industry] || 'building';
+
+                return `
+                    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group">
+                        <div class="p-5 flex-1 space-y-3">
+                            
+                            <!-- Header de la Tarjeta -->
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-lg bg-slate-900 text-emerald-400 flex items-center justify-center font-bold text-xs group-hover:bg-emerald-500 group-hover:text-slate-950 transition">
+                                        <i data-lucide="${iconName}" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-xs font-semibold text-slate-500">${industry}</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusBadge(status)}">
+                                        ${status}
+                                    </span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${getRiskBadge(risk)}">
+                                        ${risk}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-extrabold text-lg text-slate-900 leading-snug group-hover:text-emerald-700 transition line-clamp-1">${name}</h3>
+                                <p class="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                    <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i> ${location}
+                                </p>
+                            </div>
+
+                            <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">${story}</p>
+
+                            <!-- Mini Métricas -->
+                            <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs">
+                                <div>
+                                    <span class="text-slate-400 block text-[10px] uppercase font-medium">Objetivo</span>
+                                    <span class="font-bold text-slate-900">$${target.toLocaleString()}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 block text-[10px] uppercase font-medium">ROI Proyectado</span>
+                                    <span class="font-extrabold text-emerald-600">${roi}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="px-5 py-3.5 bg-slate-50/70 border-t border-slate-100 flex justify-between items-center text-xs">
+                            <span class="text-slate-500">Mín: <strong>$${ticket.toLocaleString()}</strong></span>
+                            <button onclick="openDetailModal('${pyme.id}')" class="font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group-hover:translate-x-0.5 transition">
+                                Ver Perfil <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function getRiskBadge(risk) {
+            switch(risk) {
+                case 'Bajo': return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                case 'Moderado': return 'bg-amber-100 text-amber-800 border border-amber-200';
+                case 'Alto': return 'bg-rose-100 text-rose-800 border border-rose-200';
+                default: return 'bg-slate-100 text-slate-800';
+            }
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'Abierta': return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+                case 'En Evaluación': return 'bg-cyan-50 text-cyan-700 border border-cyan-200';
+                case 'Financiada': return 'bg-slate-200 text-slate-700 border border-slate-300';
+                default: return 'bg-slate-100 text-slate-700';
+            }
+        }
+
+        // CONTROLADORES DE MODALES
+        window.openAboutModal = function() { document.getElementById('about-modal').classList.remove('hidden'); };
+        window.closeAboutModal = function() { document.getElementById('about-modal').classList.add('hidden'); };
+
+        window.openArchitectureModal = function() { document.getElementById('arch-modal').classList.remove('hidden'); };
+        window.closeArchitectureModal = function() { document.getElementById('arch-modal').classList.add('hidden'); };
+
+        window.openBackupModal = function() { document.getElementById('backup-modal').classList.remove('hidden'); };
+        window.closeBackupModal = function() { document.getElementById('backup-modal').classList.add('hidden'); };
+
+        window.openCsvModal = function() { 
+            resetCsvModalState();
+            document.getElementById('csv-modal').classList.remove('hidden'); 
+        };
+        window.closeCsvModal = function() { document.getElementById('csv-modal').classList.add('hidden'); };
+
+        window.openFormModal = function() { document.getElementById('form-modal').classList.remove('hidden'); };
+        window.closeFormModal = function() { document.getElementById('form-modal').classList.add('hidden'); };
+
+        // MODAL DE DETALLE
+        window.openDetailModal = function(id) {
+            window.activePymeId = id;
+            const pyme = window.pymes.find(p => String(p.id) === String(id));
+            if (!pyme) return;
+
+            const name = pyme.name || pyme.nombre || 'Sin nombre';
+            const location = pyme.location || pyme.ubicacion || 'Costa Rica';
+            const industry = pyme.industry || pyme.industria || 'General';
+            const status = pyme.status || pyme.estado || 'Abierta';
+            const risk = pyme.risk_level || pyme.riesgo || 'Moderado';
+            const target = Number(pyme.target_amount || pyme.monto || 0);
+            const ticket = Number(pyme.min_ticket || pyme.ticket || 0);
+            const roi = pyme.expected_roi || pyme.roi || 0;
+            const term = pyme.term_months || pyme.plazo || 24;
+
+            document.getElementById('detail-name').innerText = name;
+            document.getElementById('detail-location').innerText = location;
+            document.getElementById('detail-industry').innerText = industry;
+            document.getElementById('detail-status').innerText = status;
+            document.getElementById('detail-target').innerText = `$${target.toLocaleString()}`;
+            document.getElementById('detail-ticket').innerText = `$${ticket.toLocaleString()}`;
+            document.getElementById('detail-roi').innerText = `${roi}%`;
+            document.getElementById('detail-term').innerText = `Plazo: ${term} meses`;
+            
+            document.getElementById('detail-ebitda').innerText = pyme.ebitda ? `$${Number(pyme.ebitda).toLocaleString()}` : 'N/A';
+            document.getElementById('detail-fcf').innerText = (pyme.free_cash_flow || pyme.fcf) ? `$${Number(pyme.free_cash_flow || pyme.fcf).toLocaleString()}` : 'N/A';
+            document.getElementById('detail-debt').innerText = (pyme.debt_ratio || pyme.deuda) ? `${pyme.debt_ratio || pyme.deuda}%` : 'N/A';
+
+            document.getElementById('detail-story').innerText = pyme.story || pyme.historia || 'Sin información registrada.';
+            document.getElementById('detail-thesis').innerText = pyme.investment_thesis || pyme.tesis || 'Sin tesis de inversión registrada.';
+
+            document.getElementById('detail-tags').innerHTML = `
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${getRiskBadge(risk)}">Riesgo ${risk}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${industry}</span>
+            `;
+
+            renderComments(pyme.comments || pyme.notes || []);
+            document.getElementById('detail-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeDetailModal = function() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            window.activePymeId = null;
+        };
+
+        // GESTIÓN DE COMENTARIOS
+        function renderComments(comments) {
+            const list = document.getElementById('comments-list');
+            if (!comments || comments.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400 italic">No hay notas de seguimiento registradas para esta PYME.</p>`;
+                return;
+            }
+            list.innerHTML = comments.map(c => `
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
+                    <div class="flex justify-between items-center font-bold text-slate-800 mb-1">
+                        <span>${c.author || 'Inversionista'}</span>
+                        <span class="text-[10px] text-slate-400 font-normal">${c.date}</span>
+                    </div>
+                    <p class="text-slate-600">${c.text}</p>
+                </div>
+            `).join('');
+        }
+
+        window.addComment = async function() {
+            if (!window.activePymeId) return;
+            const authorInput = document.getElementById('comment-author');
+            const textInput = document.getElementById('comment-text');
+
+            if (!textInput.value.trim()) return;
+
+            const pyme = window.pymes.find(p => String(p.id) === String(window.activePymeId));
+            if (!pyme) return;
+
+            const newComment = {
+                author: authorInput.value.trim() || 'Analista',
+                text: textInput.value.trim(),
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            const updatedComments = [...(pyme.comments || pyme.notes || []), newComment];
+            pyme.comments = updatedComments;
+
+            if (useFirestore && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pymes', window.activePymeId);
+                await updateDoc(docRef, { comments: updatedComments });
+            } else {
+                saveLocalStorage();
+            }
+
+            renderComments(updatedComments);
+            textInput.value = '';
+            showToast("Nota agregada correctamente.", "success");
+        };
+
+        window.deleteActivePyme = async function() {
+            if (!window.activePymeId) return;
+            if (confirm('¿Estás seguro de que deseas eliminar permanentemente este registro de PYME?')) {
+                const idToDelete = window.activePymeId;
+                if (useFirestore && db) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pymes', idToDelete);
+                    await deleteDoc(docRef);
+                } else {
+                    window.pymes = window.pymes.filter(p => String(p.id) !== String(idToDelete));
+                    saveLocalStorage();
+                    renderDashboard();
+                }
+                window.closeDetailModal();
+                showToast("Proyecto eliminado con éxito.", "info");
+            }
+        };
+
+        // SUBMISIÓN DE NUEVA PYME
+        window.handleFormSubmit = async function(e) {
+            e.preventDefault();
+            const newPyme = {
+                name: document.getElementById('input-name').value.trim(),
+                industry: document.getElementById('input-industry').value,
+                location: document.getElementById('input-location').value.trim(),
+                risk_level: document.getElementById('input-risk').value,
+                target_amount: Number(document.getElementById('input-target').value),
+                min_ticket: Number(document.getElementById('input-ticket').value),
+                expected_roi: Number(document.getElementById('input-roi').value),
+                term_months: Number(document.getElementById('input-term').value),
+                ebitda: Number(document.getElementById('input-ebitda').value) || 0,
+                free_cash_flow: Number(document.getElementById('input-fcf').value) || 0,
+                debt_ratio: Number(document.getElementById('input-debt').value) || 0,
+                story: document.getElementById('input-story').value.trim(),
+                investment_thesis: document.getElementById('input-thesis').value.trim(),
+                status: 'Abierta',
+                comments: []
+            };
+
+            if (useFirestore && db) {
+                const pymesRef = collection(db, 'artifacts', appId, 'public', 'data', 'pymes');
+                await addDoc(pymesRef, newPyme);
+            } else {
+                newPyme.id = 'pyme-' + Date.now();
+                window.pymes.unshift(newPyme);
+                saveLocalStorage();
+                renderDashboard();
+            }
+
+            window.closeFormModal();
+            document.getElementById('pyme-form').reset();
+            showToast("PYME registrada exitosamente.", "success");
+        };
+
+        // =========================================================================
+        // MÓDULO 1: RESPALDO TOTAL DE PROYECTOS (JSON & CSV)
+        // =========================================================================
+        window.exportProjectsJSON = function() {
+            try {
+                const exportPayload = {
+                    metadata: {
+                        application: "Kawori Inversiones Locales",
+                        version: "1.2",
+                        export_type: "full_projects_backup",
+                        exported_at: new Date().toISOString(),
+                        total_records: window.pymes.length
+                    },
+                    projects: window.pymes
+                };
+
+                const jsonStr = JSON.stringify(exportPayload, null, 2);
+                downloadFile(jsonStr, `kawori_respaldo_proyectos_${getFormattedDate()}.json`, 'application/json');
+                showToast("Respaldo total de proyectos descargado en JSON.", "success");
+            } catch (err) {
+                console.error("Error al exportar proyectos:", err);
+                showToast("Error al exportar: " + err.message, "error");
+            }
+        };
+
+        window.exportProjectsCSV = function() {
+            try {
+                const headers = [
+                    "Nombre", "Industria", "Ubicacion", "Monto_Buscado", "ROI_Proyectado", 
+                    "Ticket_Minimo", "Riesgo", "Plazo_Meses", "EBITDA", "FCF", "Deuda_Ratio", 
+                    "Historia", "Tesis_Inversion", "Estado"
+                ];
+
+                const rows = window.pymes.map(p => [
+                    `"${(p.name || p.nombre || '').replace(/"/g, '""')}"`,
+                    `"${(p.industry || p.industria || '').replace(/"/g, '""')}"`,
+                    `"${(p.location || p.ubicacion || '').replace(/"/g, '""')}"`,
+                    Number(p.target_amount ?? p.monto ?? 0),
+                    Number(p.expected_roi ?? p.roi ?? 0),
+                    Number(p.min_ticket ?? p.ticket ?? 0),
+                    `"${(p.risk_level || p.riesgo || 'Moderado').replace(/"/g, '""')}"`,
+                    p.term_months || p.plazo || 24,
+                    Number(p.ebitda ?? 0),
+                    Number(p.free_cash_flow ?? p.fcf ?? 0),
+                    Number(p.debt_ratio ?? p.deuda ?? 0),
+                    `"${(p.story || p.historia || '').replace(/"/g, '""')}"`,
+                    `"${(p.investment_thesis || p.tesis || '').replace(/"/g, '""')}"`,
+                    `"${(p.status || p.estado || 'Abierta').replace(/"/g, '""')}"`
+                ]);
+
+                const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+                downloadFile(csvContent, `kawori_proyectos_${getFormattedDate()}.csv`, 'text/csv;charset=utf-8;');
+                showToast("Proyectos exportados a CSV exitosamente.", "success");
+            } catch (err) {
+                console.error("Error al exportar a CSV:", err);
+                showToast("Error al exportar CSV: " + err.message, "error");
+            }
+        };
+
+        // =========================================================================
+        // MÓDULO 2: RESPALDO DE LA APLICACIÓN (HTML AUTÓNOMO)
+        // =========================================================================
+        window.exportAppBackup = function() {
+            try {
+                // Clonamos el HTML actual e incrustamos los datos activos en la constante initialPymes
+                let fullHtml = document.documentElement.outerHTML;
+                const serializedProjects = JSON.stringify(window.pymes, null, 4);
+
+                // Sustituir la declaración de initialPymes
+                const regexInitialPymes = /const initialPymes\s*=\s*\[[\s\S]*?\];/;
+                if (regexInitialPymes.test(fullHtml)) {
+                    fullHtml = fullHtml.replace(regexInitialPymes, `const initialPymes = ${serializedProjects};`);
+                }
+
+                const docFile = "<!DOCTYPE html>\n" + fullHtml;
+                downloadFile(docFile, `kawori_plataforma_completa_backup_${getFormattedDate()}.html`, 'text/html;charset=utf-8;');
+                showToast("Copia de seguridad completa de la aplicación generada en HTML.", "success");
+            } catch (err) {
+                console.error("Error al exportar aplicación:", err);
+                showToast("Error al respaldar aplicación: " + err.message, "error");
+            }
+        };
+
+        // RESTAURAR PROYECTOS DESDE JSON
+        window.handleRestoreJSON = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    let importedProjects = [];
+
+                    if (Array.isArray(parsed)) {
+                        importedProjects = parsed;
+                    } else if (parsed && parsed.projects && Array.isArray(parsed.projects)) {
+                        importedProjects = parsed.projects;
+                    } else {
+                        throw new Error("El archivo JSON no contiene un arreglo de proyectos válido.");
+                    }
+
+                    if (confirm(`Se han detectado ${importedProjects.length} proyectos. ¿Deseas reemplazar tu base de datos actual con este respaldo?`)) {
+                        window.pymes = importedProjects;
+                        saveLocalStorage();
+                        renderDashboard();
+                        closeBackupModal();
+                        showToast(`Se restauraron ${importedProjects.length} proyectos con éxito.`, "success");
+                    }
+                } catch(err) {
+                    alert("Error al restaurar archivo: " + err.message);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file, "UTF-8");
+        };
+
+        // =========================================================================
+        // MÓDULO 3: CARGA MASIVA DE PROYECTOS (CSV PARSER & IMPORT)
+        // =========================================================================
+        window.downloadCSVTemplate = function() {
+            const template = "\uFEFF" + 
+`Nombre,Industria,Ubicacion,Monto_Buscado,ROI_Proyectado,Ticket_Minimo,Riesgo,Plazo_Meses,EBITDA,FCF,Deuda_Ratio,Historia,Tesis_Inversion,Estado
+"Café Altura Tarrazú","Agrícola","Tarrazú, San José",55000,16.5,4000,"Bajo",36,34000,22000,18,"Cooperativa de café de especialidad con exportación a Europa y Asia.","Financiamiento para secadoras solares mecánicas y tostado artesanal.","Abierta"
+"CiberSeguridad Nova","Tecnológica","Escazú, San José",120000,22.0,10000,"Moderado",24,45000,32000,12,"Plataforma SaaS B2B de monitoreo de vulnerabilidades para entidades financieras medianas.","Expansión de equipo comercial y certificaciones SOC2 para venta regional en Centroamérica.","En Evaluación"
+"Hotel Boutique Punta Uva","Hostelería","Puerto Viejo, Limón",90000,18.0,5000,"Moderado",48,58000,35000,30,"Hotel ecológico de 14 habitaciones con 82% de ocupación sostenida en el Caribe Sur.","Construcción de restaurante con vista al mar y piscina de agua salada.","Abierta"
+"Muebles & Diseños del Bosque","Manufactura","Palmares, Alajuela",40000,14.0,2500,"Bajo",24,26000,18000,20,"Taller de carpintería artesanal e industrializado con maderas certificadas sostenibles.","Adquisición de router CNC industrial computarizado para duplicar velocidad de corte.","Financiada"
+"Distribuciones Médicas del Sur","Comercio / Retail","Pérez Zeledón, San José",75000,17.2,5000,"Moderado",36,39000,26000,25,"Comercializadora de insumos médicos descartables para clínicas privadas en la zona sur.","Apertura de centro de distribución secundario y compra de vehículos refrigerados.","Abierta"
+`;
+            downloadFile(template, 'plantilla_carga_masiva_pymes.csv', 'text/csv;charset=utf-8;');
+            showToast("Plantilla CSV descargada con éxito.", "info");
+        };
+
+        function resetCsvModalState() {
+            pendingCsvPymes = [];
+            document.getElementById('csv-file-input').value = '';
+            document.getElementById('csv-preview-container').classList.add('hidden');
+            document.getElementById('csv-confirm-btn').disabled = true;
+            document.getElementById('csv-preview-table-body').innerHTML = '';
+        }
+
+        function setupCsvDragAndDrop() {
+            const dropzone = document.getElementById('csv-dropzone');
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('dragover');
+                }, false);
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    processCSVFile(files[0]);
+                }
+            }, false);
+        }
+
+        window.handleCSVFileSelect = function(e) {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                processCSVFile(files[0]);
+            }
+        };
+
+        function processCSVFile(file) {
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert("Por favor selecciona un archivo con extensión .csv");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const parsedData = parseCSV(text);
+
+                    if (parsedData.rows.length === 0) {
+                        alert("El archivo CSV está vacío o no contiene filas de datos.");
+                        return;
+                    }
+
+                    // Mapear filas a objetos PYME
+                    pendingCsvPymes = [];
+                    for (let i = 0; i < parsedData.rows.length; i++) {
+                        const row = parsedData.rows[i];
+                        const pyme = mapCSVRowToPyme(parsedData.headers, row);
+                        if (pyme.name && pyme.name.trim().length > 0) {
+                            pendingCsvPymes.push(pyme);
+                        }
+                    }
+
+                    if (pendingCsvPymes.length === 0) {
+                        alert("No se detectaron registros válidos con columna de nombre en el CSV.");
+                        return;
+                    }
+
+                    // Mostrar previsualización
+                    displayCSVPreview(parsedData.delimiter, pendingCsvPymes);
+
+                } catch (err) {
+                    console.error("Error al procesar archivo CSV:", err);
+                    alert("Error al leer el archivo CSV: " + err.message);
+                }
+            };
+            reader.readAsText(file, "UTF-8");
+        }
+
+        // PARSER CSV ROBUSTO (RFC 4180)
+        function parseCSV(text) {
+            text = text.trim();
+            if (!text) return { delimiter: ',', headers: [], rows: [] };
+
+            const firstLine = text.split(/\r\n|\n|\r/)[0];
+            const commaCount = (firstLine.match(/,/g) || []).length;
+            const semicolonCount = (firstLine.match(/;/g) || []).length;
+            const tabCount = (firstLine.match(/\t/g) || []).length;
+
+            let delimiter = ',';
+            if (semicolonCount > commaCount && semicolonCount > tabCount) delimiter = ';';
+            else if (tabCount > commaCount && tabCount > semicolonCount) delimiter = '\t';
+
+            const rows = [];
+            let currentRow = [];
+            let currentCell = '';
+            let insideQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (insideQuotes && nextChar === '"') {
+                        currentCell += '"';
+                        i++;
+                    } else {
+                        insideQuotes = !insideQuotes;
+                    }
+                } else if (char === delimiter && !insideQuotes) {
+                    currentRow.push(currentCell.trim());
+                    currentCell = '';
+                } else if ((char === '\r' || char === '\n') && !insideQuotes) {
+                    if (char === '\r' && nextChar === '\n') i++;
+                    currentRow.push(currentCell.trim());
+                    if (currentRow.some(c => c.length > 0)) {
+                        rows.push(currentRow);
+                    }
+                    currentRow = [];
+                    currentCell = '';
+                } else {
+                    currentCell += char;
+                }
+            }
+
+            if (currentCell.length > 0 || currentRow.length > 0) {
+                currentRow.push(currentCell.trim());
+                if (currentRow.some(c => c.length > 0)) {
+                    rows.push(currentRow);
+                }
+            }
+
+            if (rows.length === 0) return { delimiter, headers: [], rows: [] };
+
+            const headers = rows[0].map(h => h.replace(/^\uFEFF/, '').trim());
+            const dataRows = rows.slice(1);
+
+            return { delimiter, headers, rows: dataRows };
+        }
+
+        // MAPEO DE COLUMNAS CSV A OBJETO PYME
+        function mapCSVRowToPyme(headers, row) {
+            const item = {
+                id: 'pyme-csv-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+                name: '',
+                industry: 'Comercio / Retail',
+                location: 'Costa Rica',
+                target_amount: 0,
+                min_ticket: 1000,
+                expected_roi: 12.0,
+                risk_level: 'Moderado',
+                term_months: 24,
+                ebitda: 0,
+                free_cash_flow: 0,
+                debt_ratio: 0,
+                story: '',
+                investment_thesis: '',
+                status: 'Abierta',
+                comments: []
+            };
+
+            headers.forEach((h, idx) => {
+                const val = row[idx] ? row[idx].trim() : '';
+                const normHeader = h.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+                if (normHeader.includes('nombre') || normHeader.includes('name') || normHeader.includes('empresa') || normHeader.includes('pyme')) {
+                    item.name = val;
+                } else if (normHeader.includes('industr') || normHeader.includes('sector')) {
+                    item.industry = val || 'Comercio / Retail';
+                } else if (normHeader.includes('ubic') || normHeader.includes('locat') || normHeader.includes('ciudad')) {
+                    item.location = val || 'Costa Rica';
+                } else if (normHeader.includes('monto') || normHeader.includes('target') || normHeader.includes('capital')) {
+                    item.target_amount = parseFloat(val.replace(/[$, ]/g, '')) || 0;
+                } else if (normHeader.includes('roi') || normHeader.includes('tir') || normHeader.includes('retorno')) {
+                    item.expected_roi = parseFloat(val.replace(/[%, ]/g, '')) || 0;
+                } else if (normHeader.includes('ticket')) {
+                    item.min_ticket = parseFloat(val.replace(/[$, ]/g, '')) || 0;
+                } else if (normHeader.includes('riesgo') || normHeader.includes('risk')) {
+                    item.risk_level = (['Bajo', 'Moderado', 'Alto'].includes(val)) ? val : 'Moderado';
+                } else if (normHeader.includes('plazo') || normHeader.includes('term') || normHeader.includes('meses')) {
+                    item.term_months = parseInt(val) || 24;
+                } else if (normHeader.includes('ebitda')) {
+                    item.ebitda = parseFloat(val.replace(/[$, ]/g, '')) || 0;
+                } else if (normHeader.includes('fcf') || normHeader.includes('flujo') || normHeader.includes('cash')) {
+                    item.free_cash_flow = parseFloat(val.replace(/[$, ]/g, '')) || 0;
+                } else if (normHeader.includes('deuda') || normHeader.includes('debt')) {
+                    item.debt_ratio = parseFloat(val.replace(/[%, ]/g, '')) || 0;
+                } else if (normHeader.includes('historia') || normHeader.includes('story') || normHeader.includes('descrip')) {
+                    item.story = val;
+                } else if (normHeader.includes('tesis') || normHeader.includes('thesis') || normHeader.includes('destino')) {
+                    item.investment_thesis = val;
+                } else if (normHeader.includes('estado') || normHeader.includes('status')) {
+                    item.status = (['Abierta', 'En Evaluación', 'Financiada'].includes(val)) ? val : 'Abierta';
+                }
+            });
+
+            return item;
+        }
+
+        function displayCSVPreview(delimiter, items) {
+            document.getElementById('csv-preview-container').classList.remove('hidden');
+            document.getElementById('csv-preview-count').innerText = `${items.length} proyectos detectados en el CSV`;
+            document.getElementById('csv-preview-delim').innerText = `Delimitador: "${delimiter === '\t' ? 'TAB' : delimiter}"`;
+
+            const tbody = document.getElementById('csv-preview-table-body');
+            tbody.innerHTML = items.slice(0, 10).map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-2.5 font-bold text-slate-800">${item.name}</td>
+                    <td class="p-2.5 text-slate-600">${item.industry}</td>
+                    <td class="p-2.5 font-semibold text-slate-900">$${item.target_amount.toLocaleString()}</td>
+                    <td class="p-2.5 text-emerald-600 font-bold">${item.expected_roi}%</td>
+                    <td class="p-2.5">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${getRiskBadge(item.risk_level)}">
+                            ${item.risk_level}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
+            if (items.length > 10) {
+                tbody.innerHTML += `
+                    <tr class="bg-slate-50/50">
+                        <td colspan="5" class="p-2 text-center text-xs text-slate-400 italic">
+                            ... y ${items.length - 10} proyectos adicionales listos para importar.
+                        </td>
+                    </tr>
+                `;
+            }
+
+            document.getElementById('csv-confirm-btn').disabled = false;
+        }
+
+        window.confirmCSVImport = async function() {
+            if (!pendingCsvPymes || pendingCsvPymes.length === 0) return;
+
+            const mode = document.querySelector('input[name="csv-import-mode"]:checked').value;
+            const count = pendingCsvPymes.length;
+
+            if (mode === 'replace') {
+                window.pymes = [...pendingCsvPymes];
+            } else {
+                window.pymes = [...pendingCsvPymes, ...window.pymes];
+            }
+
+            if (useFirestore && db) {
+                const pymesRef = collection(db, 'artifacts', appId, 'public', 'data', 'pymes');
+                for (const item of pendingCsvPymes) {
+                    await addDoc(pymesRef, item);
+                }
+            } else {
+                saveLocalStorage();
+            }
+
+            renderDashboard();
+            closeCsvModal();
+            showToast(`¡Éxito! Se han importado ${count} proyectos correctamente.`, "success");
+        };
+
+        // =========================================================================
+        // UTILIDADES: DESCARGA DE ARCHIVOS Y TOASTS
+        // =========================================================================
+        function downloadFile(content, fileName, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 300);
+        }
+
+        function getFormattedDate() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bg = 'bg-slate-900 text-white border-slate-800';
+            let icon = 'info';
+            if (type === 'success') {
+                bg = 'bg-emerald-950 text-emerald-200 border-emerald-800';
+                icon = 'check-circle-2';
+            } else if (type === 'error') {
+                bg = 'bg-rose-950 text-rose-200 border-rose-800';
+                icon = 'alert-triangle';
+            }
+
+            toast.className = `${bg} pointer-events-auto border px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-medium transform transition-all duration-300 opacity-0 translate-y-2`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
