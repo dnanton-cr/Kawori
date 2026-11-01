@@ -1,0 +1,430 @@
+<!-- ... existing code ... -->
+    <!-- MODAL 2: ARCHITECTURE & SUPABASE / FIREBASE GUIDE -->
+    <div id="arch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-slate-900 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900">Despliegue & Conexión (Antigravity + Firebase + Vercel)</h3>
+                        <p class="text-xs text-slate-500">Flujo de trabajo para sincronizar tu repo en GitHub, Vercel y Firebase</p>
+                    </div>
+                </div>
+                <button onclick="closeArchitectureModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6 text-sm text-slate-600">
+                <!-- Flujo Antigravity -> GitHub -> Vercel -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                            <i data-lucide="terminal" class="w-4 h-4 text-emerald-600"></i> 1. Antigravity Local
+                        </div>
+                        <p class="text-xs text-slate-500 mb-2">Clona y edita el repositorio localmente desde tu terminal/editor:</p>
+                        <code class="block bg-slate-900 text-emerald-400 p-2 rounded text-[11px]">git clone https://github.com/dnanton-cr/Kawori.git</code>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                            <i data-lucide="github" class="w-4 h-4"></i> 2. GitHub Repositorio
+                        </div>
+                        <p class="text-xs text-slate-500">Cualquier cambio empujado a `main` desencadenará una compilación automática en Vercel:</p>
+                        <code class="block bg-slate-900 text-slate-200 p-2 rounded text-[11px]">git push origin main</code>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                            <i data-lucide="flame" class="w-4 h-4 text-amber-500"></i> 3. Firebase Firestore
+                        </div>
+                        <p class="text-xs text-slate-500">La aplicación guarda dinámicamente las PYMEs en el proyecto <strong>kawori-d3a38</strong> bajo la colección `/artifacts/{appId}/public/data/pymes`.</p>
+                    </div>
+                </div>
+
+                <!-- Configuración de Firebase -->
+                <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-amber-900">
+                    <div class="font-bold mb-1 flex items-center gap-1.5">
+                        <i data-lucide="key" class="w-4 h-4 text-amber-600"></i> Configuración de Firebase
+                    </div>
+                    <p class="leading-relaxed">
+                        Para habilitar la persistencia multiusuario en vivo, abre tu proyecto en <a href="https://console.firebase.google.com/project/kawori-d3a38/overview" target="_blank" class="underline font-bold">Firebase Console</a>, genera tu <code>firebaseConfig</code> en Ajustes del proyecto y sustituye las llaves en el script principal de este <code>index.html</code>. Si las llaves están vacías o incompletas, el sistema utilizará automáticamente <code>localStorage</code> como respaldo local.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- ... existing code ... -->
+    <!-- APPLICATION SCRIPT (STATE & FIREBASE / STORAGE LOGIC) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de Firebase para el proyecto 'kawori-d3a38'
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "", // Coloca aquí tu apiKey de Firebase Console
+            authDomain: "kawori-d3a38.firebaseapp.com",
+            projectId: "kawori-d3a38",
+            storageBucket: "kawori-d3a38.firebasestorage.app",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kawori-app';
+        let db = null;
+        let auth = null;
+        let useFirestore = false;
+
+        // Intentar inicializar Firebase
+        try {
+            if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                useFirestore = true;
+
+                // Autenticar anónimamente o con custom token
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            }
+        } catch (err) {
+            console.warn("Firebase no configurado completamente. Se usará localStorage de respaldo.", err);
+            useFirestore = false;
+        }
+
+        // INITIAL DEMO DATA FOR LOCAL FALLBACK
+        const initialPymes = [
+            {
+                id: '1',
+                name: 'Finca Orgánica San Carlos',
+                industry: 'Agrícola',
+                location: 'San Carlos, Alajuela',
+                target_amount: 45000,
+                min_ticket: 3000,
+                expected_roi: 15.5,
+                risk_level: 'Bajo',
+                term_months: 24,
+                ebitda: 28000,
+                free_cash_flow: 19000,
+                debt_ratio: 22,
+                story: 'Empresa familiar dedicada al cultivo de raíz de yuca y plátano para exportación. Cuentan con 7 años en el mercado costarricense.',
+                investment_thesis: 'El financiamiento se destinará a instalar un sistema de riego por goteo automatizado. Garantía prendaria sobre terreno.',
+                comments: [
+                    { author: 'Daniel N.', text: 'Visitamos la finca. Tienen contratos vigentes de compra en San José.', date: '2026-10-15' }
+                ]
+            },
+            {
+                id: '2',
+                name: 'Eco-Lodge & Spa Monteverde',
+                industry: 'Hostelería',
+                location: 'Monteverde, Puntarenas',
+                target_amount: 80000,
+                min_ticket: 5000,
+                expected_roi: 18.0,
+                risk_level: 'Moderado',
+                term_months: 36,
+                ebitda: 52000,
+                free_cash_flow: 31000,
+                debt_ratio: 40,
+                story: 'Boutique eco-lodge de 12 cabañas con un 78% de ocupación promedio anual.',
+                investment_thesis: 'Construcción de 4 nuevas villas de lujo y paneles solares para reducir factura eléctrica.',
+                comments: []
+            }
+        ];
+
+        // APP STATE
+        window.pymes = [];
+        window.currentFilter = 'Todas';
+        window.searchQuery = '';
+        window.activePymeId = null;
+
+        const industries = ['Todas', 'Agrícola', 'Tecnológica', 'Hostelería', 'Comercio / Retail', 'Manufactura', 'Servicios'];
+
+        // INITIALIZATION AND LISTENERS
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFilters();
+            
+            if (useFirestore && db && auth.currentUser) {
+                // Suscribirse a cambios en Firestore según reglas (path: /artifacts/{appId}/public/data/pymes)
+                const pymesRef = collection(db, 'artifacts', appId, 'public', 'data', 'pymes');
+                onSnapshot(pymesRef, (snapshot) => {
+                    window.pymes = snapshot.docs.map(docSnap => ({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    }));
+                    if (window.pymes.length === 0) {
+                        // Cargar demo inicial si está vacía la BD
+                        initialPymes.forEach(async (pyme) => {
+                            await addDoc(pymesRef, pyme);
+                        });
+                    }
+                    renderDashboard();
+                }, (error) => {
+                    console.error("Error al sincronizar Firestore:", error);
+                    loadLocalStorage();
+                });
+            } else {
+                loadLocalStorage();
+            }
+
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                window.searchQuery = e.target.value.toLowerCase();
+                renderDashboard();
+            });
+        });
+
+        function loadLocalStorage() {
+            const saved = localStorage.getItem('kawori_pymes');
+            if (saved) {
+                window.pymes = JSON.parse(saved);
+            } else {
+                window.pymes = [...initialPymes];
+                saveLocalStorage();
+            }
+            renderDashboard();
+        }
+
+        function saveLocalStorage() {
+            localStorage.setItem('kawori_pymes', JSON.stringify(window.pymes));
+        }
+
+        window.resetDemoData = async function() {
+            if(confirm('¿Deseas restaurar los datos de prueba iniciales de Kawori?')) {
+                if (useFirestore && db) {
+                    const pymesRef = collection(db, 'artifacts', appId, 'public', 'data', 'pymes');
+                    initialPymes.forEach(async (item) => {
+                        await addDoc(pymesRef, item);
+                    });
+                } else {
+                    window.pymes = [...initialPymes];
+                    saveLocalStorage();
+                    renderDashboard();
+                }
+            }
+        };
+
+        // RENDER FILTERS
+        function renderFilters() {
+            const container = document.getElementById('industry-filters');
+            container.innerHTML = industries.map(ind => `
+                <button onclick="setFilter('${ind}')" class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${window.currentFilter === ind ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                    ${ind}
+                </button>
+            `).join('');
+        }
+
+        window.setFilter = function(ind) {
+            window.currentFilter = ind;
+            renderFilters();
+            renderDashboard();
+        };
+
+        // RENDER DASHBOARD & CARDS
+        function renderDashboard() {
+            const grid = document.getElementById('pyme-grid');
+            const empty = document.getElementById('empty-state');
+
+            const filtered = window.pymes.filter(item => {
+                const matchesIndustry = window.currentFilter === 'Todas' || item.industry === window.currentFilter;
+                const matchesSearch = item.name.toLowerCase().includes(window.searchQuery) ||
+                                      (item.location && item.location.toLowerCase().includes(window.searchQuery)) ||
+                                      item.industry.toLowerCase().includes(window.searchQuery);
+                return matchesIndustry && matchesSearch;
+            });
+
+            // Update Stats
+            document.getElementById('stat-total').innerText = window.pymes.length;
+            const totalCap = window.pymes.reduce((acc, curr) => acc + Number(curr.target_amount || 0), 0);
+            document.getElementById('stat-capital').innerText = `$${totalCap.toLocaleString()}`;
+            const avgRoi = window.pymes.length > 0 ? (window.pymes.reduce((acc, curr) => acc + Number(curr.expected_roi || 0), 0) / window.pymes.length).toFixed(1) : 0;
+            document.getElementById('stat-roi').innerText = `${avgRoi}%`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.innerHTML = filtered.map(pyme => `
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+                    <div class="p-5 flex-1 space-y-3">
+                        <div class="flex justify-between items-start gap-2">
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${getRiskBadge(pyme.risk_level)}">
+                                Riesgo ${pyme.risk_level}
+                            </span>
+                            <span class="text-xs text-slate-500 font-medium">${pyme.industry}</span>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-900 leading-snug">${pyme.name}</h3>
+                            <p class="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                <i data-lucide="map-pin" class="w-3 h-3"></i> ${pyme.location || 'Costa Rica'}
+                            </p>
+                        </div>
+
+                        <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">${pyme.story}</p>
+
+                        <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
+                            <div>
+                                <span class="text-slate-400 block">Objetivo</span>
+                                <span class="font-bold text-slate-800">$${Number(pyme.target_amount).toLocaleString()}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block">ROI Proyectado</span>
+                                <span class="font-bold text-emerald-600">${pyme.expected_roi}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-500">Min: <strong>$${Number(pyme.min_ticket).toLocaleString()}</strong></span>
+                        <button onclick="openDetailModal('${pyme.id}')" class="font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
+                            Ver Perfil <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function getRiskBadge(risk) {
+            switch(risk) {
+                case 'Bajo': return 'bg-emerald-100 text-emerald-800';
+                case 'Moderado': return 'bg-amber-100 text-amber-800';
+                case 'Alto': return 'bg-rose-100 text-rose-800';
+                default: return 'bg-slate-100 text-slate-800';
+            }
+        }
+
+        // MODAL HANDLERS
+        window.openAboutModal = function() { document.getElementById('about-modal').classList.remove('hidden'); };
+        window.closeAboutModal = function() { document.getElementById('about-modal').classList.add('hidden'); };
+
+        window.openArchitectureModal = function() { document.getElementById('arch-modal').classList.remove('hidden'); };
+        window.closeArchitectureModal = function() { document.getElementById('arch-modal').classList.add('hidden'); };
+
+        window.openFormModal = function() { document.getElementById('form-modal').classList.remove('hidden'); };
+        window.closeFormModal = function() { document.getElementById('form-modal').classList.add('hidden'); };
+
+        window.openDetailModal = function(id) {
+            window.activePymeId = id;
+            const pyme = window.pymes.find(p => p.id === id);
+            if (!pyme) return;
+
+            document.getElementById('detail-name').innerText = pyme.name;
+            document.getElementById('detail-location').innerText = pyme.location || 'Costa Rica';
+            document.getElementById('detail-target').innerText = `$${Number(pyme.target_amount).toLocaleString()}`;
+            document.getElementById('detail-ticket').innerText = `$${Number(pyme.min_ticket).toLocaleString()}`;
+            document.getElementById('detail-roi').innerText = `${pyme.expected_roi}%`;
+            document.getElementById('detail-term').innerText = `${pyme.term_months || 24} meses`;
+            
+            document.getElementById('detail-ebitda').innerText = pyme.ebitda ? `$${Number(pyme.ebitda).toLocaleString()}` : 'N/A';
+            document.getElementById('detail-fcf').innerText = pyme.free_cash_flow ? `$${Number(pyme.free_cash_flow).toLocaleString()}` : 'N/A';
+            document.getElementById('detail-debt').innerText = pyme.debt_ratio ? `${pyme.debt_ratio}%` : 'N/A';
+
+            document.getElementById('detail-story').innerText = pyme.story || 'Sin información disponible.';
+            document.getElementById('detail-thesis').innerText = pyme.investment_thesis || 'Sin tesis registrada.';
+
+            document.getElementById('detail-tags').innerHTML = `
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full ${getRiskBadge(pyme.risk_level)}">Riesgo ${pyme.risk_level}</span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">${pyme.industry}</span>
+            `;
+
+            renderComments(pyme.comments || []);
+            document.getElementById('detail-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeDetailModal = function() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            window.activePymeId = null;
+        };
+
+        // COMMENTS MANAGEMENT
+        function renderComments(comments) {
+            const list = document.getElementById('comments-list');
+            if (!comments || comments.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400 italic">No hay notas registradas para esta PYME.</p>`;
+                return;
+            }
+            list.innerHTML = comments.map(c => `
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
+                    <div class="flex justify-between items-center font-semibold text-slate-800 mb-1">
+                        <span>${c.author || 'Inversionista'}</span>
+                        <span class="text-[10px] text-slate-400">${c.date}</span>
+                    </div>
+                    <p class="text-slate-600">${c.text}</p>
+                </div>
+            `).join('');
+        }
+
+        window.addComment = async function() {
+            if (!window.activePymeId) return;
+            const authorInput = document.getElementById('comment-author');
+            const textInput = document.getElementById('comment-text');
+
+            if (!textInput.value.trim()) return;
+
+            const pyme = window.pymes.find(p => p.id === window.activePymeId);
+            const newComment = {
+                author: authorInput.value.trim() || 'Analista',
+                text: textInput.value.trim(),
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            const updatedComments = [...(pyme.comments || []), newComment];
+
+            if (useFirestore && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pymes', window.activePymeId);
+                await updateDoc(docRef, { comments: updatedComments });
+            } else {
+                pyme.comments = updatedComments;
+                saveLocalStorage();
+                renderComments(updatedComments);
+            }
+
+            textInput.value = '';
+        };
+
+        // FORM SUBMISSION
+        window.handleFormSubmit = async function(e) {
+            e.preventDefault();
+            const newPyme = {
+                name: document.getElementById('input-name').value,
+                industry: document.getElementById('input-industry').value,
+                location: document.getElementById('input-location').value,
+                risk_level: document.getElementById('input-risk').value,
+                target_amount: Number(document.getElementById('input-target').value),
+                min_ticket: Number(document.getElementById('input-ticket').value),
+                expected_roi: Number(document.getElementById('input-roi').value),
+                term_months: Number(document.getElementById('input-term').value),
+                ebitda: Number(document.getElementById('input-ebitda').value) || 0,
+                free_cash_flow: Number(document.getElementById('input-fcf').value) || 0,
+                debt_ratio: Number(document.getElementById('input-debt').value) || 0,
+                story: document.getElementById('input-story').value,
+                investment_thesis: document.getElementById('input-thesis').value,
+                comments: []
+            };
+
+            if (useFirestore && db) {
+                const pymesRef = collection(db, 'artifacts', appId, 'public', 'data', 'pymes');
+                await addDoc(pymesRef, newPyme);
+            } else {
+                newPyme.id = Date.now().toString();
+                window.pymes.unshift(newPyme);
+                saveLocalStorage();
+                renderDashboard();
+            }
+
+            window.closeFormModal();
+            document.getElementById('pyme-form').reset();
+        };
+    </script>
+</body>
+</html>
